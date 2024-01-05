@@ -22,6 +22,8 @@ static int get_offset(int col, int row);
 static int get_offset_row(int offset);
 static int get_offset_col(int offset);
 
+extern uint8_t is_alternate_process_running;
+
 static uint32_t *blocked_write_locations = NULL;
 
 void clear_bwl() {
@@ -80,6 +82,34 @@ void kprint_at(char *message, int col, int row) {
         col = get_offset_col(offset);
     }
 }
+
+void kprint_w(char* message, int window) {
+    int offset = get_cursor_offset();
+    int row = get_offset_row(offset);
+    int col = get_offset_col(offset);
+
+    /* Loop through message and print it */
+    int i = 0;
+    while (message[i] != 0) {
+        if(window == 0) {
+            if(col > 37) {
+                col = 1;
+                row++;
+            }
+        } else{
+            if(col < 41) {
+                col = 41;
+                row++;
+            }
+        }
+
+        offset = print_char(message[i++], col, row, WHITE_ON_BLACK);
+
+        /* Compute row/col for next iteration */
+        row = get_offset_row(offset);
+        col = get_offset_col(offset);
+    }
+} 
 
 /**
  * @brief      Print a message at the specified location, preserving cursor position
@@ -162,6 +192,11 @@ static int print_char(char c, int col, int row, char attr) {
     if (col >= 0 && row >= 0) offset = get_offset(col, row);
     else offset = get_cursor_offset();
 
+    if(is_alternate_process_running) {
+        offset += 26*80*2;
+        
+    }
+
     if (c == '\n') {
         row = get_offset_row(offset);
         offset = get_offset(0, row+1);
@@ -174,8 +209,11 @@ static int print_char(char c, int col, int row, char attr) {
         offset += 2;
     }
 
+    if(is_alternate_process_running) offset -= 26*80*2;
+
     /* Check if the offset is over screen size and scroll */
     if (offset >= MAX_ROWS * MAX_COLS * 2) {
+        if(is_alternate_process_running) offset += 26*80*2;
         int i;
         for (i = 1; i < MAX_ROWS; i++) 
             memory_copy((uint8_t*)(get_offset(0, i) + VIDEO_ADDRESS),
@@ -220,8 +258,10 @@ void clear_screen() {
     uint8_t *screen = (uint8_t*) VIDEO_ADDRESS;
 
     for (i = 0; i < screen_size; i++) {
-        screen[i*2] = ' ';
-        screen[i*2+1] = WHITE_ON_BLACK;
+        int j = 0;
+        if(is_alternate_process_running) j = 26*80*2;
+        screen[i*2+j] = ' ';
+        screen[i*2+1+j] = WHITE_ON_BLACK;
     }
     set_cursor_offset(get_offset(0, 0));
 }

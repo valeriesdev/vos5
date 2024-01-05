@@ -4,7 +4,14 @@ KERNEL_OFFSET equ 0x1000   ; The kernel location is 0x7c00
     mov [BOOT_DRIVE], dl   ; The BIOS places the boot drive in DL; retrieve it
     mov bp, 0x9000         ; Place the stack at 0x9000
     mov sp, bp             ; ^
- 
+    
+     mov ax, 0003h
+    int 10h
+
+    mov ax, 1112h
+    xor bl, bl
+    int 10h
+
     call load_kernel       ; Read the kernel from disk
     call switch_to_pm      ; Switch to protected mode
     jmp $                  ; Never executed

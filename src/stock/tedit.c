@@ -63,8 +63,6 @@ static void exit_program() {
 	keybuffer = free(keybuffer);
 
 	// Prepare return to CLI
-	clear_screen();
-	kprint("\n> ");
 
 	// Init CLI Keyboard
 	//kernel_init_keyboard();

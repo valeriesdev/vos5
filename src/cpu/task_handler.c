@@ -11,6 +11,8 @@ static uint32_t* new_page_tables = NULL;
 static void* last_file = NULL;
 static uint32_t bitmap = NULL;
 
+uint8_t is_alternate_process_running;
+
 void start_process(void* load_from_address, void* entry_address, uint32_t length) {
 	// Duplicate the page directory
 	// Grab an empty page (old page directory)
@@ -42,9 +44,10 @@ void start_process(void* load_from_address, void* entry_address, uint32_t length
 	// Remap our page(s) to 0xf00000
 	switch_paging_structure(&new_page_structure);      // From here on, we are using our new pages
 	set_page_value(0xF00000, free_page*0x1000|0b011);
+	//set_page_value(0xB8000, 0xB9000|0b011);
 	// Load our new directory
 	uint32_t eip = 0xF00000 + entry_address - load_from_address;
-
+	is_alternate_process_running = 1;
 	__asm__("cli\n\t"
 		    //"mov %0, %%esp\n\t"
 		    //"mov %1, %%ebp\n\t"
@@ -68,6 +71,7 @@ static void initialize_tables (uint32_t *page_dir, uint32_t *tables) {
 }
 
 void reload_kernel() {
+	is_alternate_process_running = 0;
 	//update_last_paging_structure();
 	switch_paging_structure(&kernel_paging_structure);
 	__asm__("cli\n\t"
@@ -80,6 +84,10 @@ void reload_kernel() {
 		    	: : "r"(kernel_paging_structure.page_directory));
 	//free_paging_structure();
 
+	
+	clear_screen();
+	kprint("\n> ");
+	
 	kernel_init_keyboard();
 	kernel_loop();
 }

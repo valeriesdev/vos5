@@ -28,6 +28,8 @@
 
 #include "cpu/task_handler.h"
 
+#include "kernel/windows.h"
+
 
 struct command_block *command_resolver_head;
 char **lkeybuffer = NULL;
@@ -77,6 +79,8 @@ __attribute__((section(".kernel_entry")))  void kernel_main() {
     register_command(command_resolver_head, DEBUG_PAUSE, "debug_command");
     //register_command(command_resolver_head, tedit, "tedit"); 
     register_command(command_resolver_head, RUN, "run");
+
+    setup_windows();
 
     kernel_loop();
 }
