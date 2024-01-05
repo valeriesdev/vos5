@@ -61,6 +61,9 @@ __attribute__((section(".kernel_entry")))  void kernel_main() {
 
     kprint("Welcome to VOS!\n> ");
 
+    clear_bwl();
+    add_bwl(0);
+
     command_resolver_head = malloc(sizeof(struct command_block)); // Does not need to be freed; should always stay in memory
     command_resolver_head->function = NULLFUNC;
     command_resolver_head->call_string = "";
@@ -97,6 +100,8 @@ void kernel_loop() {
 
             next_function(args_processed);
             next_function = NULL;
+            clear_bwl();
+            add_bwl(0);
             kprint("> ");
             get_keybuffer()[0] = '\0';
             free(args_processed);

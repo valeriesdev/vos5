@@ -22,6 +22,37 @@ static int get_offset(int col, int row);
 static int get_offset_row(int offset);
 static int get_offset_col(int offset);
 
+static uint32_t *blocked_write_locations = NULL;
+
+void clear_bwl() {
+    if(blocked_write_locations != NULL) free (blocked_write_locations);
+    blocked_write_locations = NULL;
+    blocked_write_locations = malloc(sizeof(uint8_t)*1);
+}
+
+void add_bwl(uint32_t new) {
+    uint32_t *current = blocked_write_locations;
+    uint32_t size = 0;
+    while(*current != 0) {
+        current++;
+        size++;
+    }
+
+    uint32_t *new_bwl = malloc(size+1);
+    int i = 0;
+    for(i = 0; i < size; i++) {
+        new_bwl[i] = blocked_write_locations[i];
+    }
+
+    free(blocked_write_locations);
+    blocked_write_locations = new_bwl;
+
+    if(new != 0)
+        new_bwl[size] = new;
+    else
+        new_bwl[size] = get_cursor_offset();
+}
+
 /**
  * @brief      Prints a message at the specified location
  * @ingroup    SCREEN
@@ -87,6 +118,13 @@ void kprint(char *message) {
  * @ingroup    SCREEN
  */
 void kprint_backspace() {
+    uint32_t *current = blocked_write_locations;
+    while(*current != 0) {
+        if(get_cursor_offset() == *current) {
+            return;
+        }
+        current++;
+    }
     int offset = get_cursor_offset()-2;
     int row = get_offset_row(offset);
     int col = get_offset_col(offset);

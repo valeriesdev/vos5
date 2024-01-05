@@ -44,4 +44,5 @@ binary/%.bin: src/boot/%.asm src/cpu/interrupt.asm
 clean:
 	rm -rf binary/*.bin binary/*.dis binary/*.o binary/os-image.bin binary/*.elf
 	rm -rf $(B_SOURCES)
+	rm -rf log.txt
 	clear
