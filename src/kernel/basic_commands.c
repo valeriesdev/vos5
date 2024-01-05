@@ -82,9 +82,10 @@ void DEBUG_PAUSE(char *args) {
 }
 
 void RUN(char *args) {
-	void* program = read_file(args);
+	struct file_descriptor file = read_file(args);
+	void* program = file.address;
 	if(program != 0) {
-		start_process(program, program+0x38, 512);
+		start_process(program, program+0x38, file.size_bytes);
 	} else {
 		kprint("Program not found.\n");
 	}

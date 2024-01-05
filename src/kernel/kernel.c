@@ -56,6 +56,7 @@ __attribute__((section(".kernel_entry")))  void kernel_main() {
     enable_paging();
     kprint("Paging enabled.\nLoading FAT from disk.\n");
 
+    init_fat_info();
     load_fat_from_disk();
 
     kprint("Welcome to VOS!\n> ");
@@ -74,6 +75,10 @@ __attribute__((section(".kernel_entry")))  void kernel_main() {
     //register_command(command_resolver_head, tedit, "tedit"); 
     register_command(command_resolver_head, RUN, "run");
 
+    kernel_loop();
+}
+
+void kernel_loop() {
     while(1) {
         if(next_function != NULL) {
             kprint("\n");

@@ -8,6 +8,8 @@
 #include "stock/tedit.h"
 #include "stock/program_interface/popup.h"
 
+#include "cpu/task_handler.h"
+
 #define TRUE 1
 #define FALSE 0
 
@@ -37,8 +39,7 @@ tedit_header struct fat_code file_info = {
 static const char a[] = "woah... this is a new program.\n I think im loaded at 0xF000000...\n but i'm actually loaded at 0x3003000\0";
 
 tedit_code void func()  {
-	kprint(a);
-	while(1);
+	initialize();
 }
 // Variables that will need to be malloc'd and free'd
 char* keybuffer = NULL;
@@ -47,8 +48,6 @@ char* keybuffer = NULL;
 uint8_t new_file = NULL;
 char *file_name = NULL;
 uint8_t exit = NULL;
-
-
 
 static void initialize_keyboard() {
 	keybuffer = malloc(sizeof(char)*256);
@@ -68,8 +67,9 @@ static void exit_program() {
 	kprint("\n> ");
 
 	// Init CLI Keyboard
-	kernel_init_keyboard();
+	//kernel_init_keyboard();
 	exit = 0;
+	reload_kernel();
 }
 
 static void save_program() {
@@ -114,7 +114,7 @@ static void initialize() {
 	} else {
 		// procedure for editing file
 		new_file = FALSE;
-		void* old_file = read_file(file_name);
+		void* old_file = read_file(file_name).address;
 		memory_copy((uint8_t*)old_file,(uint8_t*)keybuffer,strlen((char*)old_file));
 		kprint_at(keybuffer,0,1);
 		free(old_file);
@@ -122,9 +122,4 @@ static void initialize() {
 
 	exit = 1;
 	while(exit);
-}
-
-void tedit() {
-	//while(1);
-	initialize();
 }

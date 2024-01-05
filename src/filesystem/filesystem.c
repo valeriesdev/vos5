@@ -31,10 +31,12 @@ static uint8_t get_file(char* name);
  * @return     The file index.
  */
 static uint8_t get_file(char* name) {
+	uint32_t offset = 0;
 	struct file *current = fat_head;
 	while(current->magic == 0xFFFFFFFF) {
-		if(strcmp(current->name, name) == 0) return 1;
+		if(strcmp(current->name, name) == 0) return offset;
 		current++;
+		offset++;
 	}
 	return 0;
 }
@@ -98,13 +100,22 @@ void overwrite_file(char* name, void *file_data, uint32_t size_bytes) {
  *
  * @return     A void pointer to that file in memory. <b>Must be free'd</b>
  */
-void *read_file(char* name) {
+struct file_descriptor read_file(char* name) {
+	struct file_descriptor file = {
+		.address = NULL,
+		.size_bytes = 0
+	};
+
 	uint8_t offset = get_file(name);
-	if(offset == 0) return NULL;
+	if(offset == 0) return file;
 	struct file *file_to_read = fat_head+offset;
 	void *return_file = malloc(file_to_read->length*512);
 	read_sectors_ATA_PIO((uint32_t)return_file, file_to_read->lba, file_to_read->length);
-	return return_file;
+
+	file.address = return_file;
+	file.size_bytes = file_to_read->length*512;
+
+	return file;
 } 
 
 /**

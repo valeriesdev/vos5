@@ -19,6 +19,11 @@ struct file {
 	//uint8_t padding[128-(32+4+4+4+4)];
 };
 
+struct file_descriptor {
+	void* address;
+	uint32_t size_bytes;
+};
+
 struct program_identifier {
     uint32_t magic[4];
     char name[32];
@@ -29,7 +34,8 @@ struct program_identifier {
 void load_fat_from_disk();
 void write_file(char* name, void *file_data, uint32_t size_bytes);
 void overwrite_file(char* name, void *file_data, uint32_t size_bytes);
-void *read_file(char* name);
+struct file_descriptor read_file(char* name);
 struct file *get_files();
+void init_fat_info();
 
 #endif
