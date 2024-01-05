@@ -25,7 +25,7 @@ SECTIONS
     . = ALIGN(4096);
   }
   
-  .test_program program_addr_virt : AT(((phys + (bss - code) + SIZEOF (.bss) + 4096) & 0xFFFFFFFFF000) - 512)
+  .test_program program_addr_virt : AT(((LOADADDR(.bss) + SIZEOF(.bss) + 4096) & 0xFFFFFFFFFF000) - 512)
   {
     test_program = .;
     *(.tedit_header) 
@@ -34,9 +34,9 @@ SECTIONS
     . = ALIGN(4096);
   }
 
-  .other_program program_addr_virt : AT(((((phys + (bss - code) + SIZEOF (.bss) + SIZEOF(.test_program) + 4096) & 0xFFFFFFFFF000) - 512 + 4096) & 0xFFFFFFFFF000) - 512)
+  .other_program program_addr_virt : AT(((LOADADDR(.test_program) + SIZEOF(.test_program) + 4096) & 0xFFFFFFFFF000) - 512)
   {
-    test_program = .;
+    other_program = .;
     *(.other_header) 
     *(.other_entry)
     src/stock/other_program.o(*.text *.rodata *.data *.bss)

@@ -8,7 +8,7 @@ static uint32_t right_cursor_row = 0;
 void setup_windows() {
 	//clear_screen();
 	int i = 0;
-	for(i = 0; i < 80; i++) {
+	for(i = 0; i < 79; i++) {
 		kprint_at_preserve("-", i, 24);
 	}
 }

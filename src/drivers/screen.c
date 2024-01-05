@@ -13,6 +13,7 @@
 #include "drivers/screen.h"
 #include "cpu/ports.h"
 #include "libc/mem.h"
+#include "kernel/windows.h"
 
 // Private function declarations
 static int get_cursor_offset();
@@ -225,6 +226,7 @@ static int print_char(char c, int col, int row, char attr) {
         for (i = 0; i < MAX_COLS * 2; i++) last_line[i] = 0;
 
         offset -= 2 * MAX_COLS;
+        //setup_windows();
     }
 
     set_cursor_offset(offset);
@@ -253,7 +255,7 @@ static void set_cursor_offset(int offset) {
 }
 
 void clear_screen() {
-    int screen_size = MAX_COLS * MAX_ROWS;
+    int screen_size = MAX_COLS * 24;
     int i;
     uint8_t *screen = (uint8_t*) VIDEO_ADDRESS;
 

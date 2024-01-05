@@ -16,10 +16,11 @@ header struct fat_code other_file_info = {
 	.magic = {0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF},
 	.name = "other.vxv\0",
 	.lba = 0,
-	.length = 3
+	.length = 1
 };
 
 entry void other_func() {
+	clear_screen();
 	kprint("HELLO WORLD!!!");
 
 	reload_kernel();

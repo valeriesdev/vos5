@@ -4,8 +4,8 @@
 #include <stdint.h>
 
 #define initial_node_name "INIT_NODE"
-#define FAT_LBA 65
-#define FIRST_DATA_LBA 75
+#define FAT_LBA 184
+#define FIRST_DATA_LBA 190
 
 struct file *fat_head;
 uint32_t num_registered_files;

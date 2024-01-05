@@ -45,6 +45,7 @@ extern uint32_t length_linker;
 
 void* find_program();
 
+
 __attribute__((section(".kernel_entry")))  void kernel_main() {
     kprint("Initializing memory manager.\n");
     initialize_memory();
