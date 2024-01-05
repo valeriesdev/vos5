@@ -169,7 +169,8 @@ static void default_keyboard_callback(registers_t *regs) {
             kprint_backspace();
         } else if (scancode == LSHIFTP) {
         } else if (scancode == RSHIFTP) {
-        } else if (scancode == 0x1C && special_key_behavior == 1) {
+        } else if (scancode == LCTRL) {
+        }  else if (scancode == 0x1C && special_key_behavior == 1) {
             append(key_buffer, 0x1C); 
         } else if (scancode == 0x1C && special_key_behavior == 0) {
             append(key_buffer, '\n');

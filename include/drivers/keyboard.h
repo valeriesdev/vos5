@@ -18,6 +18,8 @@
 #define RSHIFTP 0x36
 #define RHISFTR 0xB6
 
+#define LCTRL 0x1D
+
 struct keyboard_initializer {
 	char* nkey_buffer;
     uint8_t num_callbacks;
