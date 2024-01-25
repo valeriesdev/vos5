@@ -19,7 +19,10 @@
 #include "drivers/screen.h"
 #include "libc/function.h"
 #include "filesystem/filesystem.h"
-#include "cpu/task_handler.h"
+
+#include "cpu/process_handler.h"
+
+#include "cpu/task_manager.h"
 
 extern struct command_block *command_resolver_head;
 
@@ -85,7 +88,8 @@ void RUN(char *args) {
 	struct file_descriptor file = read_file(args);
 	void* program = file.address;
 	if(program != 0) {
-		start_process(program, program+0x38, file.size_bytes);
+		start_process(program, 0x38, file.size_bytes, 0);
+		//start_program(program, 1, 0x38, file.size_bytes);
 	} else {
 		kprint("Program not found.\n");
 	}

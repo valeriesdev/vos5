@@ -15,16 +15,20 @@
 #include "cpu/paging.h"
 #include "libc/function.h"
 
+
 page_t* get_page(uint32_t address, int make, page_directory_t *directory);
 void page_fault(registers_t *regs);
 void allocate_frame(page_t *page, uint8_t is_kernel, uint8_t is_writeable);
 void free_frame(page_t *page);
+
+
 static char* h_to_a_inline(int n);
 static uint32_t test_frame(uint32_t frame_address);
 uint32_t find_first_frame();
 
+paging_structure_t kernel_paging_structure;
 paging_structure_t *paging_structure = &kernel_paging_structure;
-paging_structure_t *last_paging_structure;
+paging_structure_t **all_paging_structures = NULL;
 
 /**
  * @brief      Enables paging for the kernel
@@ -33,6 +37,14 @@ paging_structure_t *last_paging_structure;
  * @ingroup    PAGING
  */
 void enable_paging() {
+    paging_structure = &kernel_paging_structure;
+    all_paging_structures = malloc(sizeof(paging_structure_t**)*5);
+    all_paging_structures[0] = &kernel_paging_structure;
+    all_paging_structures[1] = NULL;
+    all_paging_structures[2] = NULL;
+    all_paging_structures[3] = NULL;
+    all_paging_structures[4] = NULL;
+
     kernel_paging_structure.page_directory = malloc_align(4096, 4096);
     kernel_paging_structure.page_tables    = malloc_align(1024*1024*4, 4096);
     kernel_paging_structure.frame_bitmap   = malloc(0x20000);
@@ -218,14 +230,4 @@ static char* h_to_a_inline(int n) {
     }
     
     return str;
-}
-
-void update_last_paging_structure() {
-    last_paging_structure = paging_structure;
-}
-
-void free_paging_structure() {
-    free(last_paging_structure->page_directory);
-    free(last_paging_structure->page_tables);
-    refactor_free();
 }

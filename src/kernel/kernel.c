@@ -26,9 +26,10 @@
 
 #include "cpu/ports.h"
 
-#include "cpu/task_handler.h"
+#include "cpu/process_handler.h"
 
 #include "kernel/windows.h"
+
 
 
 struct command_block *command_resolver_head;
@@ -83,10 +84,16 @@ __attribute__((section(".kernel_entry")))  void kernel_main() {
 
     setup_windows();
 
-    kernel_loop();
+    start_process(kernel_loop, 0, 0, 1);
 }
 
 void kernel_loop() {
+    clear_screen();
+    next_function = NULL;
+    clear_bwl();
+    add_bwl(0);
+    kprint("> ");
+    get_keybuffer()[0] = '\0';
     while(1) {
         if(next_function != NULL) {
             kprint("\n");

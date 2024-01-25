@@ -28,7 +28,7 @@ static void timer_callback(registers_t *regs) {
 
     if(tick%25 == 0) {
         char* string = hex_to_ascii((int)get_top());
-        kprint_at_preserve(string,0,0);
+        kprint_at_preserve(string,71,0);
         string = free(string);
     }
 

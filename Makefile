@@ -1,7 +1,7 @@
 C_SOURCES := $(wildcard src/*.c src/*/*.c src/*/*/*.c src/*/*/*/*.c)
 B_SOURCES := $(wildcard src/*.o src/*/*.o src/*/*/*.o src/*/*/*/*.o)
 #HEADERS := $(wildcard include/*.h src/*/*.h src/*/*/*.h src/*/*/*/*.h)
-OBJ = ${C_SOURCES:.c=.o binary/interrupt.o} 
+OBJ = ${C_SOURCES:.c=.o binary/interrupt.o binary/yield.o} 
 
 CC = /usr/local/i386elfgcc/bin/i386-elf-gcc
 GDB = gdb
@@ -36,6 +36,9 @@ binary/%.o: src/boot/%.asm
 	nasm $< -f elf -o $@
 
 binary/interrupt.o: src/cpu/interrupt.asm
+	nasm $< -f elf -o $@
+
+binary/yield.o: src/cpu/yield.asm
 	nasm $< -f elf -o $@
 
 binary/%.bin: src/boot/%.asm src/cpu/interrupt.asm
