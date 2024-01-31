@@ -3,12 +3,15 @@
 [extern irq_handler]
 
 global irq_common_stub;
+global irq_return;
 
 section .text
 ; Common ISR code
 isr_common_stub:
     ; 1. Save CPU state
     pusha ; Pushes edi,esi,ebp,esp,ebx,edx,ecx,eax
+    mov eax, cr3
+    push eax
     mov ax, ds ; Lower 16-bits of eax = ds.
     push eax ; save the data segment descriptor
     mov ax, 0x10  ; kernel data segment descriptor
@@ -28,6 +31,7 @@ isr_common_stub:
     mov es, ax
     mov fs, ax
     mov gs, ax
+    pop eax 
     popa
     add esp, 8 ; Cleans up the pushed error code and pushed ISR number
     iret ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP
@@ -36,26 +40,42 @@ isr_common_stub:
 ; and the 'pop ebx'
 irq_common_stub:
     pusha 
+
+    mov eax, cr3
+    push eax
+
     mov ax, ds
     push eax
+
     mov ax, 0x10
     mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
+
     push esp
+
     cld
     call irq_handler ; Different than the ISR code
+
     pop ebx  ; Different than the ISR code
     pop ebx
+
     mov ds, bx
     mov es, bx
     mov fs, bx
     mov gs, bx
+
+    pop eax 
+
     popa
+    
     add esp, 8
     iret 
     
+irq_return:
+    iret
+
 ; We don't get information about which interrupt was caller
 ; when the handler is run, so we will need to have a different handler
 ; for every interrupt.

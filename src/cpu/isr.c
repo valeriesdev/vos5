@@ -202,8 +202,3 @@ void irq_install() {
 
     register_interrupt_handler(46, disk_interrupt);
 }
-
-
-// 0x008fff14
-// 0x008fff14
-// 0x00001bff

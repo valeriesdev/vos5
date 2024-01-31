@@ -16,6 +16,8 @@
 #include "libc/string.h"
 #include "libc/mem.h"
 
+#include "cpu/task_manager.h"
+
 volatile uint32_t tick = 0;
 
 /**
@@ -26,12 +28,12 @@ volatile uint32_t tick = 0;
 static void timer_callback(registers_t *regs) {
     tick++;
 
-    if(tick%25 == 0) {
+    if(tick%50 == 0) {
         char* string = hex_to_ascii((int)get_top());
         kprint_at_preserve(string,71,0);
         string = free(string);
-    }
-
+        switch_interrupt(regs);
+    }   
 
     UNUSED(regs);
 }

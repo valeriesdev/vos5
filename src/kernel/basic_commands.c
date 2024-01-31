@@ -20,11 +20,8 @@
 #include "libc/function.h"
 #include "filesystem/filesystem.h"
 
-#include "cpu/process_handler.h"
-
-#include "cpu/task_manager.h"
-
 extern struct command_block *command_resolver_head;
+extern void* kernel_paging_structure;
 
 void ECHO(char *args) {
 	kprint(args);
@@ -70,17 +67,6 @@ void HELP(char *args) {
 }
 
 void DEBUG_PAUSE(char *args) {
-	/*int i = 0;
-	for(i = 0; i < 512*10; i += 1) {
-		void* z = malloc(i);
-		char* x = int_to_ascii(i);
-		kprintn(x);
-		free(z);
-		free(x);
-	}*/
-
-	//debug_traverse();
-
 	UNUSED(args);
 }
 
@@ -88,11 +74,14 @@ void RUN(char *args) {
 	struct file_descriptor file = read_file(args);
 	void* program = file.address;
 	if(program != 0) {
-		start_process(program, 0x38, file.size_bytes, 0);
+		//start_process(program, 0x38, file.size_bytes, 0);
 		//start_program(program, 1, 0x38, file.size_bytes);
+		start_task(&kernel_paging_structure, program, 0);
 	} else {
 		kprint("Program not found.\n");
 	}
+
+	return;
 }
 
 void LESS(char *args) {

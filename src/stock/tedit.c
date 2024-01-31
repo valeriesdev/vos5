@@ -8,8 +8,6 @@
 #include "stock/tedit.h"
 #include "stock/program_interface/popup.h"
 
-#include "cpu/process_handler.h"
-
 #define TRUE 1
 #define FALSE 0
 
@@ -67,7 +65,7 @@ static void exit_program() {
 	// Init CLI Keyboard
 	//kernel_init_keyboard();
 	exit = 0;
-	reload_kernel();
+	//reload_kernel();
 }
 
 static void save_program() {

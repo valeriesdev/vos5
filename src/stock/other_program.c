@@ -1,5 +1,4 @@
 #include "drivers/screen.h"
-#include "cpu/process_handler.h"
 #include <stdint.h>
 
 #define header __attribute__((section(".other_header"))) 
@@ -22,6 +21,4 @@ header struct fat_code other_file_info = {
 entry void other_func() {
 	clear_screen();
 	kprint("HELLO WORLD!!!");
-
-	reload_kernel();
 }

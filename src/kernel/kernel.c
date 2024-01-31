@@ -26,9 +26,9 @@
 
 #include "cpu/ports.h"
 
-#include "cpu/process_handler.h"
-
 #include "kernel/windows.h"
+
+#include "cpu/task_manager.h"
 
 
 
@@ -45,7 +45,27 @@ extern uint32_t address_linker;
 extern uint32_t length_linker;
 
 void* find_program();
+void prime2();
+extern void* kernel_paging_structure;
 
+void printb() {
+    while(1) {
+        kprintn("bbbbbbb");
+    }
+}
+
+void printa() {
+    while(1) {
+        int i = 0;
+        while(i < 100000000) {
+            if(i%10000000 == 0) {
+                kprint_at_preserve("process b running ", 60, 5);
+                kprint_at_preserve(int_to_ascii(i), 60, 6);
+            }
+            i++;
+        }
+    }
+}
 
 __attribute__((section(".kernel_entry")))  void kernel_main() {
     kprint("Initializing memory manager.\n");
@@ -84,16 +104,25 @@ __attribute__((section(".kernel_entry")))  void kernel_main() {
 
     setup_windows();
 
-    start_process(kernel_loop, 0, 0, 1);
+    //start_process(kernel_loop, 0, 0, 1);
+    //kernel_loop();
+    //
+    start_task(&kernel_paging_structure, kernel_loop, 1);
+    // start_task(&kernel_paging_structure, printb, 0);
+    // kernel_loop();
+    while(1);
 }
 
+
+
 void kernel_loop() {
-    clear_screen();
+    start_task(&kernel_paging_structure, printa, 0);
     next_function = NULL;
     clear_bwl();
     add_bwl(0);
     kprint("> ");
     get_keybuffer()[0] = '\0';
+    clear_screen();
     while(1) {
         if(next_function != NULL) {
             kprint("\n");

@@ -1,6 +1,4 @@
 #include "drivers/screen.h"
-#include "cpu/process_handler.h"
-#include "cpu/task_manager.h"
 #include <stdint.h>
 
 #include "kernel/kernel.h"
@@ -42,10 +40,11 @@ entry void prime_entry() {
 			//kprint(int_to_ascii(current_number));
 			//kprintn(" is not prime.");
 		}
-		yield();
+		//save_task_state(0);
+		//yield_switch();
 	}
 
-    start_process(kernel_loop, 0, 0, 1);
+    //start_process(kernel_loop, 0, 0, 1);
 	//reload_kernel();
 }
 
