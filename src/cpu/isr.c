@@ -17,6 +17,8 @@
 #include "kernel/kernel.h"
 
 isr_t interrupt_handlers[256];
+extern void irq_return(/*uint32_t a, uint32_t b, uint32_t c*/);
+extern int return_from_task;
 
 /**
  * @brief      Installs all ISRs

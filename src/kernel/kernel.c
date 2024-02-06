@@ -17,24 +17,16 @@
 #include "libc/vstddef.h"
 #include "kernel/kernel.h"
 #include "kernel/commands.h"
-//#include "stock/tedit/tedit.h"
 #include "filesystem/filesystem.h"
 #include "drivers/keyboard.h"
 #include "cpu/timer.h"
-
 #include "cpu/paging.h"
-
 #include "cpu/ports.h"
-
 #include "kernel/windows.h"
-
 #include "cpu/task_manager.h"
-
-
 
 struct command_block *command_resolver_head;
 char **lkeybuffer = NULL;
-
 vf_ptr_s next_function = NULL;
 
 /**
@@ -44,23 +36,31 @@ vf_ptr_s next_function = NULL;
 extern uint32_t address_linker;
 extern uint32_t length_linker;
 
-void* find_program();
-void prime2();
 extern void* kernel_paging_structure;
 
 void printb() {
     while(1) {
-        kprintn("bbbbbbb");
+        int i = 0;
+        while(i < 100000000) {
+            if(i%1000000 == 0) {
+                kprint_at_preserve("process b running ", 60, 9);
+                kprint_at_preserve(int_to_ascii(i), 60, 10);
+                //yield();
+            }
+            i++;
+        }
     }
 }
 
 void printa() {
     while(1) {
         int i = 0;
+        int a,b,c,d,e,f,g;
         while(i < 100000000) {
-            if(i%10000000 == 0) {
-                kprint_at_preserve("process b running ", 60, 5);
+            if(i%1000000 == 0) {
+                kprint_at_preserve("process a running ", 60, 5);
                 kprint_at_preserve(int_to_ascii(i), 60, 6);
+                //yield();
             }
             i++;
         }
@@ -99,17 +99,13 @@ __attribute__((section(".kernel_entry")))  void kernel_main() {
     register_command(command_resolver_head, LS, "ls");
     register_command(command_resolver_head, HELP, "help");
     register_command(command_resolver_head, DEBUG_PAUSE, "debug_command");
-    //register_command(command_resolver_head, tedit, "tedit"); 
     register_command(command_resolver_head, RUN, "run");
 
     setup_windows();
 
-    //start_process(kernel_loop, 0, 0, 1);
-    //kernel_loop();
-    //
+    asm("int $33");
+
     start_task(&kernel_paging_structure, kernel_loop, 1);
-    // start_task(&kernel_paging_structure, printb, 0);
-    // kernel_loop();
     while(1);
 }
 
@@ -117,6 +113,7 @@ __attribute__((section(".kernel_entry")))  void kernel_main() {
 
 void kernel_loop() {
     start_task(&kernel_paging_structure, printa, 0);
+    start_task(&kernel_paging_structure, printb, 0);
     next_function = NULL;
     clear_bwl();
     add_bwl(0);
@@ -124,9 +121,11 @@ void kernel_loop() {
     get_keybuffer()[0] = '\0';
     clear_screen();
     while(1) {
+        char* z = read_line();
+        next_function = resolve_command(*command_resolver_head, str_split(z, ' ')[0]);
         if(next_function != NULL) {
             kprint("\n");
-            char** args = str_split(get_keybuffer(),' ');
+            char** args = str_split(z, ' ');
             char* args_processed = malloc(sizeof(char)*30);
             int current_arg = 1;
             while(args[current_arg] != 0x0 && args[current_arg] != '\0') {
@@ -147,39 +146,8 @@ void kernel_loop() {
             get_keybuffer()[0] = '\0';
             free(args_processed);
         }
+        //yield();
     }
-}
-
-
-struct fat_code {
-    uint32_t magic[4];
-    char name[32];
-    uint32_t lba;
-    uint32_t length;
-} __attribute__((packed));
-
-void* find_program() {
-    int i = 0;
-    for(i = 0; i < 256; i++) {
-        //void* program = malloc((uint32_t)length_linker);
-        void* program = malloc(512);
-        //uint32_t z = ((uint32_t)&address_linker)/512;
-
-        read_sectors_ATA_PIO((uint32_t)program, i*8, 1);
-        if(((struct fat_code*) program)->magic[0] == 0xFFFFFFFF &&
-           ((struct fat_code*) program)->magic[1] == 0xFFFFFFFF &&
-           ((struct fat_code*) program)->magic[2] == 0xFFFFFFFF &&
-           ((struct fat_code*) program)->magic[3] == 0xFFFFFFFF) {
-            return program;
-        }
-        free(program);
-    }
-    return NULL;
-}
-
-void user_input(char *input) {
-    next_function = resolve_command(*command_resolver_head, str_split(get_keybuffer(), ' ')[0]);
-    UNUSED(input);
 }
 
 /**
@@ -191,8 +159,8 @@ void kernel_init_keyboard() {
         lkeybuffer = free(lkeybuffer);
     }
     lkeybuffer = malloc(sizeof(char)*256);
-    uint8_t keycodes[] = {0x1C, 0x0, 0x0};
-    void (*gcallback_functions[])() = {user_input, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+    uint8_t keycodes[] = {0x0, 0x0, 0x0};
+    void (*gcallback_functions[])() = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     struct keyboard_initializer* keyboardi = create_initializer(1,
                                                                 keycodes,
                                                                 gcallback_functions,
@@ -200,3 +168,8 @@ void kernel_init_keyboard() {
                                                                 (char*) lkeybuffer); // ??? Why does casting from a char** to a char* just work???);
     init_keyboard(keyboardi);
 }
+
+// esp 0x7fffff0
+// ebp 0x7fffff8
+// 
+// esp 0x7ffffdc

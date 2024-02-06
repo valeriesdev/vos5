@@ -37,6 +37,8 @@
 #include "libc/mem.h"
 #include "cpu/timer.h"
 
+#include "cpu/task_manager.h"
+
 // Private function definitions
 static int attempt_key_callbacks();
 static void default_keyboard_callback(registers_t *regs);
@@ -217,8 +219,14 @@ char* read_line() {
                                                                 (void*)0x1,
                                                                 line_keybuffer);
     init_keyboard(keyboardi);
+    int i = 0;
     while(1) {
         if(character_exists(0x1C, line_keybuffer) > -1) break;
+        i++;
+        if(i%10000000 == 0) {
+            i = 0;
+            //yield();
+        }
     }
     append(line_keybuffer, '\0');
     char * return_value = malloc(sizeof(char) * strlen(line_keybuffer));

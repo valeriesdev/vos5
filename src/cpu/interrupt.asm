@@ -8,6 +8,8 @@ global irq_return;
 section .text
 ; Common ISR code
 isr_common_stub:
+    push esp
+    add word [esp], 14
     ; 1. Save CPU state
     pusha ; Pushes edi,esi,ebp,esp,ebx,edx,ecx,eax
     mov eax, cr3
@@ -33,12 +35,14 @@ isr_common_stub:
     mov gs, ax
     pop eax 
     popa
-    add esp, 8 ; Cleans up the pushed error code and pushed ISR number
+    add esp, 12 ; Cleans up the pushed error code and pushed ISR number
     iret ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP
 
 ; Common IRQ code. Identical to ISR code except for the 'call' 
 ; and the 'pop ebx'
 irq_common_stub:
+    push esp
+    add word [esp], 14
     pusha 
 
     mov eax, cr3
@@ -67,14 +71,18 @@ irq_common_stub:
     mov gs, bx
 
     pop eax 
+    mov cr3, eax
+
 
     popa
+
+
     
-    add esp, 8
+    add esp, 12
+
     iret 
-    
-irq_return:
-    iret
+
+    iret 
 
 ; We don't get information about which interrupt was caller
 ; when the handler is run, so we will need to have a different handler

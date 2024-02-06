@@ -274,7 +274,7 @@ void *malloc(uint32_t size) {
  * @return    The address of the block
  */
 void *malloc_align(uint32_t size, uint32_t align) {
-	struct block * new_block = (void*)(((long)(top + (*top).size + align) & 0xFFFFF000) - 0x10);// - ALIGN_P(size);
+	struct block * new_block = (void*)(((long)(top + (*top).size + align*4) & 0xFFFFF000) - 0x10);// - ALIGN_P(size);
 	(*new_block).size = ALIGN(size);
 	(*new_block).next = NULL;
 	(*new_block).valid = 0x0FBC;
@@ -284,6 +284,8 @@ void *malloc_align(uint32_t size, uint32_t align) {
 	top = (*top).next;
 	
 	return &(*new_block).data;
+
+
 }
 
 // Debug functions
