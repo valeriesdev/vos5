@@ -1,4 +1,5 @@
 #include "drivers/screen.h"
+#include "libc/string.h"
 #include <stdint.h>
 
 #include "kernel/kernel.h"

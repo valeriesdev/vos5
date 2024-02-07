@@ -19,7 +19,7 @@
 #include "drivers/screen.h"
 #include "libc/function.h"
 #include "filesystem/filesystem.h"
-
+#include "cpu/task_manager.h"
 extern struct command_block *command_resolver_head;
 extern void* kernel_paging_structure;
 
@@ -76,7 +76,7 @@ void RUN(char *args) {
 	if(program != 0) {
 		//start_process(program, 0x38, file.size_bytes, 0);
 		//start_program(program, 1, 0x38, file.size_bytes);
-		start_task(&kernel_paging_structure, program, 0);
+		start_task((paging_structure_t*)&kernel_paging_structure, program, 0);
 	} else {
 		kprint("Program not found.\n");
 	}

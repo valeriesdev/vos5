@@ -8,27 +8,28 @@ typedef struct task {
 	paging_structure_t *assoc_paging_struc;
 } TASK;
 
+/**
+ * Global Variables
+ */
 TASK tasks[256];
-
 uint32_t num_tasks = 0;
 uint32_t current_task = 0;
 uint8_t tasks_running = 0;
 uint8_t tasking_enabled = 0;
 
+/**
+ * Function definitions
+ */
 void start_task(paging_structure_t * task_paging_struct, void (*run_from_address)(), uint8_t launch) ;
 void next_task();
 void switch_to_task(TASK task);
 void switch_interrupt(registers_t *regs);
-extern void irq_return(/*uint32_t a, uint32_t b, uint32_t c*/);
 
 void start_task(paging_structure_t * task_paging_struct, void (*run_from_address)(), uint8_t launch) {
 	tasking_enabled = 1;
 	TASK* new_task;
 	num_tasks++;
-	//current_task = num_tasks-1;
 	new_task = &tasks[num_tasks-1];
-
-
 
 	if(task_paging_struct == NULL) { // setup paging
 	
@@ -49,22 +50,18 @@ void start_task(paging_structure_t * task_paging_struct, void (*run_from_address
    	   					   "=m"(new_task->regs->esi), "=m"(new_task->regs->ebp),
    	   					   "=m"(new_task->regs->cs),  "=m"(new_task->regs->esp), 
    	   					   "=m"(new_task->regs->ss) :);
-	new_task->regs->eip = run_from_address;
+	new_task->regs->eip = (uint32_t)run_from_address;
 	new_task->regs->cr3 = (uint32_t)(task_paging_struct->page_directory);
 	new_task->regs->cs = 0x08;
 	asm("pushf\n\t pop %0" : "=m"(new_task->regs->eflags));
 
-	new_task->regs->ebp = malloc(0x10000)+0x10000;
+	new_task->regs->ebp = (uint32_t) (malloc(0x10000)+0x10000);
 	new_task->regs->esp = new_task->regs->ebp-1;
 
 	if(launch == 1) {
 		current_task = num_tasks-1;
     	register_interrupt_handler(0x29, switch_interrupt);
     	run_from_address();
-		//asm(//"mov %0, %%ebp\n\t"
-			//"mov %1, %%esp\n\t"
-		//	"jmp %2" : : "m"(new_task->regs->ebp),"m"(new_task->regs->esp), "r"(run_from_address));
-		//run_from_address();
 		return;
 	} else {
 		return;
@@ -92,7 +89,7 @@ void switch_to_task(TASK task) {
 
 	//task.regs->eflags = regs->eflags;
 	task.regs->esp -= sizeof(registers_t);
-	memory_copy(task.regs, task.regs->esp,sizeof(registers_t));
+	memory_copy((uint8_t*)task.regs, (uint8_t*)task.regs->esp,sizeof(registers_t));
  
  
 	asm("mov %0, %%esp\n\t"
@@ -108,18 +105,14 @@ void switch_to_task(TASK task) {
 	 	"pop %%ebx\n\t" // clobber ebx
     	"add $28, %%esp\n\t"
 	 	"jmp -20(%%esp)" : : "m"((task.regs->esp)), "m"(task.regs->ebp));
-	kprint("a");
-	while(1);
-    return;
 }
 
 // executes on every tick
 void switch_interrupt(registers_t *regs) {
 	if(tasks_running == 1) {
 		*(tasks[current_task].regs) = *regs;
-		//(tasks[current_task].regs->ds) = 0x10;
 		tasks[current_task].regs->esp = regs->nesp;
-		regs->eip = (void*) next_task;
+		regs->eip = (uint32_t) next_task;
 		return;
 	} else if(tasking_enabled == 1) {
 		tasks_running = 1;

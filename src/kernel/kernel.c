@@ -55,7 +55,6 @@ void printb() {
 void printa() {
     while(1) {
         int i = 0;
-        int a,b,c,d,e,f,g;
         while(i < 100000000) {
             if(i%1000000 == 0) {
                 kprint_at_preserve("process a running ", 60, 5);
@@ -63,30 +62,18 @@ void printa() {
                 //yield();
             }
             i++;
+
         }
     }
 }
 
 __attribute__((section(".kernel_entry")))  void kernel_main() {
-    kprint("Initializing memory manager.\n");
     initialize_memory();
-    kprint("Installing ISR.\n");
     isr_install();
-    kprint("ISR Installed.\nInstalling IRQ.\n");
     irq_install();
-    kprint("IRQ Installed.\n");
-
-    kprint("Enabling paging. This might take a while...\n");
     enable_paging();
-    kprint("Paging enabled.\nLoading FAT from disk.\n");
-
     init_fat_info();
     load_fat_from_disk();
-
-    kprint("Welcome to VOS!\n> ");
-
-    clear_bwl();
-    add_bwl(0);
 
     command_resolver_head = malloc(sizeof(struct command_block)); // Does not need to be freed; should always stay in memory
     command_resolver_head->function = NULLFUNC;
@@ -103,50 +90,42 @@ __attribute__((section(".kernel_entry")))  void kernel_main() {
 
     setup_windows();
 
-    asm("int $33");
-
-    start_task(&kernel_paging_structure, kernel_loop, 1);
+    start_task((paging_structure_t*)&kernel_paging_structure, printa, 0);
+    start_task((paging_structure_t*)&kernel_paging_structure, printb, 0);
+    start_task((paging_structure_t*)&kernel_paging_structure, kernel_loop, 1);
     while(1);
 }
 
 
 
 void kernel_loop() {
-    start_task(&kernel_paging_structure, printa, 0);
-    start_task(&kernel_paging_structure, printb, 0);
     next_function = NULL;
-    clear_bwl();
-    add_bwl(0);
     kprint("> ");
     get_keybuffer()[0] = '\0';
     clear_screen();
     while(1) {
-        char* z = read_line();
-        next_function = resolve_command(*command_resolver_head, str_split(z, ' ')[0]);
+        char* input = read_line();
+        next_function = resolve_command(*command_resolver_head, str_split(input, ' ')[0]);
         if(next_function != NULL) {
             kprint("\n");
-            char** args = str_split(z, ' ');
+            char** args = str_split(input, ' ');
             char* args_processed = malloc(sizeof(char)*30);
             int current_arg = 1;
             while(args[current_arg] != 0x0 && args[current_arg] != '\0') {
                 int i = 0;
-                for(i = 0; i < strlen(args[current_arg]); i++) {
+                for(i = 0; i < strlen(args[current_arg]); i++) 
                     append(args_processed, args[current_arg][i]);
-                }
                 current_arg++;
                 if(args[current_arg] != '\0')
-                    append(args_processed, ' ');
+                append(args_processed, ' ');
             }
 
             next_function(args_processed);
-            next_function = NULL;
-            clear_bwl();
-            add_bwl(0);
+            next_function = NULL;            
             kprint("> ");
             get_keybuffer()[0] = '\0';
             free(args_processed);
         }
-        //yield();
     }
 }
 
@@ -168,8 +147,3 @@ void kernel_init_keyboard() {
                                                                 (char*) lkeybuffer); // ??? Why does casting from a char** to a char* just work???);
     init_keyboard(keyboardi);
 }
-
-// esp 0x7fffff0
-// ebp 0x7fffff8
-// 
-// esp 0x7ffffdc
