@@ -37,7 +37,7 @@ uint32_t find_first_frame();
 void set_page_value(uint32_t page_address, uint32_t page_value);
 void clear_frame(uint32_t frame_address); 
 void set_frame(uint32_t frame_address);
-void free_paging_structure();
+void ta_free_paging_structure();
 
 uint32_t *page_directory;
 uint32_t *page_tables;

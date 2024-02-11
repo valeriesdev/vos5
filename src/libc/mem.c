@@ -8,8 +8,8 @@
  * The only functions which are safe to use elsewhere are
  * 		- memory_copy
  * 		- memory_set
- * 		- malloc
- * 		- free
+ * 		- ta_alloc
+ * 		- ta_free
  * 		- initialize_memory
  * 		- get_top
  * @note       initialize_memory needs to be called in the kernel initialization process 
@@ -27,13 +27,13 @@
  * Otherwise, if the unused block has room for the new size and a char:  Split the unused block in two and allocate the new block to the first, and mark the block used (used = 1). <br>
  * Otherwise, Allocate the new block to the unused block, and mark the block used.<br>
  * 
- * If, when allocating, there are more than FREE_BLOCK_THRESHOLD blocks marked unused, the refactor_free function is called to attempt and clear up free blocks.
+ * If, when allocating, there are more than ta_free_BLOCK_THRESHOLD blocks marked unused, the refactor_ta_free function is called to attempt and clear up ta_free blocks.
  * 		
- * When freeing a block, the block is simply marked unused, unless it is the last block. 
- * If it is the last block so, the block is deleted. Then, if the new last block is marked unused, recursively free the last block.
+ * When ta_freeing a block, the block is simply marked unused, unless it is the last block. 
+ * If it is the last block so, the block is deleted. Then, if the new last block is marked unused, recursively ta_free the last block.
  * 
- * When returning the malloc'd block, or when freeing a block, the address returned/used is the address of data, so that pointers can be assigned directly to the return value of malloc. <br>
- * To free a block, the address used is stepped back until the magic number is valid (0x0FBC). Then, the block is properly aligned and can be freed.
+ * When returning the ta_alloc'd block, or when ta_freeing a block, the address returned/used is the address of data, so that pointers can be assigned directly to the return value of ta_alloc. <br>
+ * To ta_free a block, the address used is stepped back until the magic number is valid (0x0FBC). Then, the block is properly aligned and can be ta_freed.
  * 
  * @author     Valerie Whitmire
  * @date       2023
@@ -46,37 +46,28 @@
 #include "drivers/screen.h"
 #include "cpu/task_manager.h"
 
-#define TRUE 1
-#define FALSE 0
-#define FREE_BLOCK_THRESHOLD 10
-#define ALIGN(n) (sizeof(struct block) + n)
-#define ALIGN_P(n) (sizeof(size_t) + sizeof(struct block*) + sizeof(uint32_t))
+typedef struct Block Block;
+#define false 0
+#define true 1
 
-/**
- * @brief      A block of memory.
- * @ingroup    MEM
- */
-struct block {
-	size_t size;
-	struct block *next;
-	uint8_t used;
-	uint32_t valid;
-	uint8_t data;
+struct Block {
+    void *addr;
+    Block *next;
+    size_t size;
 };
 
-// Private function definitions
-static void *find_free(size_t n);
-static void *alloc(size_t size);
-static void print_node(struct block *current);
-static void traverse();
+typedef struct {
+    Block *free;   // first ta_free block
+    Block *used;   // first used block
+    Block *fresh;  // first available blank block
+    size_t top;    // top ta_free addr
+} Heap;
 
-struct block *head = (struct block*)0x100000;
-struct block *top  = (struct block*)0x100000;
-uint32_t num_free_blocks;
-
-/**
- * Memory Utility Functions
- */
+static Heap *heap = NULL;
+static const void *heap_limit = NULL;
+static size_t heap_split_thresh;
+static size_t heap_alignment;
+static size_t heap_max_blocks;
 
 /**
  * @brief      Copys memory from source to dest
@@ -106,229 +97,236 @@ void memory_set(uint8_t *dest, uint8_t val, uint32_t len) {
     for ( ; len != 0; len--) *temp++ = val;
 }
 
-
 /**
- * Memory Segmentation Functions
+ * If compaction is enabled, inserts block
+ * into ta_free list, sorted by addr.
+ * If disabled, add block has new head of
+ * the ta_free list.
  */
-
-/**
- * @brief      Initializes the memory.
- * @ingroup    MEM
- */
-void initialize_memory() {
-	head = (struct block*)0x100000;
-	top  = (struct block*)0x100000;
-	(*top).size = ALIGN(32);
-	(*top).next = NULL;
-	(*top).valid = 0x0FBC;
-	(*top).used = TRUE;
-
-	num_free_blocks = 0;
-
-	if((int)head == 0x100000) kprintn("Memory initialized properly at 0x100000");
-	else kprintn("MEMORY FAILED TO INITIALIZE!");
-
-	return;
+static void insert_block(Block *block) {
+#ifndef TA_DISABLE_COMPACT
+    Block *ptr  = heap->free;
+    Block *prev = NULL;
+    while (ptr != NULL) {
+        if ((size_t)block->addr <= (size_t)ptr->addr) {
+            break;
+        }
+        prev = ptr;
+        ptr  = ptr->next;
+    }
+    if (prev != NULL) {
+        prev->next = block;
+    } else {
+        heap->free = block;
+    }
+    block->next = ptr;
+#else
+    block->next = heap->free;
+    heap->free  = block;
+#endif
 }
 
-/**
- * @brief      Allocates a block of memory
- * @ingroup    MEM
- *
- * @param[in]  size  The size of the block
- *
- * @return     The pointer to the start of the memory within that block
- * 
- * If an unused block which has a size greater than the new size does not exist:
- * 		Allocate the new block to the end of the list
- * Otherwise, if the unused block has room for the new size and a char:
- * 		Split the unused block in two and allocate the new block to the first
- * Otherwise, 
- * 		Allocate the new block to the unused block
- */
-static void *alloc(size_t size) {
-	struct block *newBlock = (struct block *)find_free(size);
-	if((*newBlock).next == NULL) { // Procedure for allocating a block at the end of the db
-		char* tptr = (char*)newBlock;
-		newBlock = (struct block*)(tptr + (*newBlock).size);
-		(*newBlock).size = ALIGN(size);
-		(*newBlock).next = NULL;
-		(*newBlock).valid = 0x0FBC;
-		(*newBlock).used = TRUE;
-
-		(*top).next = newBlock;
-		top = (*top).next;
-	
-		return &(*newBlock).data;
-	} else { // Procedure for allocating a block at the middle of the db
-		if((*newBlock).size - ALIGN(size) > ALIGN(sizeof(char))) { // Split block
-			struct block *insertBlock = (struct block*)((uint8_t*)newBlock + ALIGN(size));
-			(*insertBlock).size = (*newBlock).size - ALIGN(size);
-			(*insertBlock).next = (*newBlock).next;
-			(*insertBlock).valid = 0x0FBC;
-			(*insertBlock).used = FALSE;
-			
-			(*newBlock).size = ALIGN(size);
-			(*newBlock).next = insertBlock;
-			(*newBlock).used = TRUE;
-			return &(*newBlock).data;
-		} else { // Fit into oversize block
-			(*newBlock).used = TRUE;
-			return &(*newBlock).data;
-		}
-	}
-
-	return NULL;
+#ifndef TA_DISABLE_COMPACT
+static void release_blocks(Block *scan, Block *to) {
+    Block *scan_next;
+    while (scan != to) {
+        scan_next   = scan->next;
+        scan->next  = heap->fresh;
+        heap->fresh = scan;
+        scan->addr  = 0;
+        scan->size  = 0;
+        scan        = scan_next;
+    }
 }
 
-static void *find_free(size_t n) {
-	struct block *current = head;
-	for(; (*current).next != NULL; current = (*current).next) {
-		if((*current).used == FALSE && ALIGN(n) < (*current).size) return current;
-	}
-	//if((*current).used == FALSE && ALIGN(n) < (*current).size) return current;
-	return current;
+static void compact() {
+    Block *ptr = heap->free;
+    Block *prev;
+    Block *scan;
+    while (ptr != NULL) {
+        prev = ptr;
+        scan = ptr->next;
+        while (scan != NULL &&
+               (size_t)prev->addr + prev->size == (size_t)scan->addr) {
+            prev = scan;
+            scan = scan->next;
+        }
+        if (prev != ptr) {
+            size_t new_size =
+                (size_t)prev->addr - (size_t)ptr->addr + prev->size;
+            ptr->size   = new_size;
+            Block *next = prev->next;
+            // make merged blocks available
+            release_blocks(ptr->next, prev->next);
+            // relink
+            ptr->next = next;
+        }
+        ptr = ptr->next;
+    }
+}
+#endif
+
+bool ta_init(const void *base, const void *limit, const size_t heap_blocks, const size_t split_thresh, const size_t alignment) {
+    heap = (Heap *)base;
+    heap_limit = limit;
+    heap_split_thresh = split_thresh;
+    heap_alignment = alignment;
+    heap_max_blocks = heap_blocks;
+
+    heap->free   = NULL;
+    heap->used   = NULL;
+    heap->fresh  = (Block *)(heap + 1);
+    heap->top    = (size_t)(heap->fresh + heap_blocks);
+
+    Block *block = heap->fresh;
+    size_t i     = heap_max_blocks - 1;
+    while (i--) {
+        block->next = block + 1;
+        block++;
+    }
+    block->next = NULL;
+    return true;
 }
 
-/**
- * @brief      Frees a block of memory
- * @ingroup    MEM
- *
- * @param      address  The address of the value to be freed
- * 
- * @return     NULL on success.
- */
-void* free(void *address) {
-	acquire_mutex(&kernel_mutex);
-	num_free_blocks++;
-	struct block *changeBlock = (struct block *)address;
-	char *tBlock = (char*)address;
-
-	for(; (int) tBlock >= (int) head; --tBlock) {
-		if((*(struct block *)tBlock).valid == 0x0FBC) {
-			changeBlock = (struct block *)tBlock;
-			break;
-		}
-	}
-
-	(*changeBlock).used = FALSE;
-	memory_set(&(*changeBlock).data, 0, (*changeBlock).size - ALIGN(0));
-	if(changeBlock == top) {
-		num_free_blocks--;
-		memory_set((uint8_t*)changeBlock, 0, &(*changeBlock).data - (uint8_t*)changeBlock);
-		struct block *current = head;
-		while(current->next != changeBlock) {
-			current = current->next;
-		}
-		current->next = NULL;
-		top = current;
-	}
-
-	release_mutex(&kernel_mutex);
-	if(top->used == 0) free(top);
-	return NULL;
+bool ta_free(void *free) {
+    Block *block = heap->used;
+    Block *prev  = NULL;
+    while (block != NULL) {
+        if (free == block->addr) {
+            if (prev) {
+                prev->next = block->next;
+            } else {
+                heap->used = block->next;
+            }
+            insert_block(block);
+#ifndef TA_DISABLE_COMPACT
+            compact();
+#endif
+            return true;
+        }
+        prev  = block;
+        block = block->next;
+    }
+    return false;
 }
 
-/**
- * @brief      Attempts to reduce the number of unused blocks
- * @ingroup    MEM
- * @todo       Verify functionality
- */
-void refactor_free() {
-	struct block *current = head;
-	while(current != NULL) {
-		if(!(current->used == TRUE || current->next->used == TRUE)) {
-			struct block *adjacent_block = current->next;
-			current->next = adjacent_block->next;
-
-			current->size += adjacent_block->size;
-			memory_set(&(*current).data, 0, (*current).size - ALIGN(0));
-		} else {
-			current = current->next;
-		}
-	}
+static Block *alloc_block(size_t num) {
+    Block *ptr  = heap->free;
+    Block *prev = NULL;
+    size_t top  = heap->top;
+    num         = (num + heap_alignment - 1) & -heap_alignment;
+    while (ptr != NULL) {
+        const int is_top = ((size_t)ptr->addr + ptr->size >= top) && ((size_t)ptr->addr + num <= (size_t)heap_limit);
+        if (is_top || ptr->size >= num) {
+            if (prev != NULL) {
+                prev->next = ptr->next;
+            } else {
+                heap->free = ptr->next;
+            }
+            ptr->next  = heap->used;
+            heap->used = ptr;
+            if (is_top) {
+                ptr->size = num;
+                heap->top = (size_t)ptr->addr + num;
+#ifndef TA_DISABLE_SPLIT
+            } else if (heap->fresh != NULL) {
+                size_t excess = ptr->size - num;
+                if (excess >= heap_split_thresh) {
+                    ptr->size    = num;
+                    Block *split = heap->fresh;
+                    heap->fresh  = split->next;
+                    split->addr  = (void *)((size_t)ptr->addr + num);
+                    split->size = excess;
+                    insert_block(split);
+#ifndef TA_DISABLE_COMPACT
+                    compact();
+#endif
+                }
+#endif
+            }
+            return ptr;
+        }
+        prev = ptr;
+        ptr  = ptr->next;
+    }
+    // no matching ta_free blocks
+    // see if any other blocks available
+    size_t new_top = top + num;
+    if (heap->fresh != NULL && new_top <= (size_t)heap_limit) {
+        ptr         = heap->fresh;
+        heap->fresh = ptr->next;
+        ptr->addr   = (void *)top;
+        ptr->next   = heap->used;
+        ptr->size   = num;
+        heap->used  = ptr;
+        heap->top   = new_top;
+        return ptr;
+    }
+    return NULL;
 }
 
-/**
- * @brief      Allocate a block of memory
- * @ingroup    MEM
- *
- * @param[in]  size  The size
- *
- * @return     The address of the block
- */
-void *malloc(uint32_t size) {
-	acquire_mutex(&kernel_mutex);
-	if(num_free_blocks > FREE_BLOCK_THRESHOLD) refactor_free();
-
-	void* t = alloc(size);
-	release_mutex(&kernel_mutex);
-	return t;
+void *ta_alloc(size_t num) {
+    Block *block = alloc_block(num);
+    if (block != NULL) {
+        return block->addr;
+    }
+    return NULL;
 }
 
-/**
- * @bried     Allocate ablock of memory, with provision to allign that to a specific address.
- * @ingroup   MEM
- * 
- * @todo       FINISH!
- * 
- * @param[in] size  The size
- * @param[in] align The address to align to
- * 
- * @return    The address of the block
- */
-void *malloc_align(uint32_t size, uint32_t align) {
-	struct block * new_block = (void*)(((long)(top + (*top).size + align*4) & 0xFFFFF000) - 0x10);// - ALIGN_P(size);
-	(*new_block).size = ALIGN(size);
-	(*new_block).next = NULL;
-	(*new_block).valid = 0x0FBC;
-	(*new_block).used = TRUE;
+void *ta_alloc_align(size_t num, size_t alignment) {
+    Block *block = alloc_block(num*2);
+    if (block != NULL) {
+        void * addr = (void*)(((size_t)block->addr + alignment) & -alignment);
+        return addr;
+    }
 
-	(*top).next = new_block;
-	top = (*top).next;
-	
-	return &(*new_block).data;
+    return NULL;
 }
 
-// Debug functions
-
-void* get_top() {
-	return top;
+static void memclear(void *ptr, size_t num) {
+    size_t *ptrw = (size_t *)ptr;
+    size_t numw  = (num & -sizeof(size_t)) / sizeof(size_t);
+    while (numw--) {
+        *ptrw++ = 0;
+    }
+    num &= (sizeof(size_t) - 1);
+    uint8_t *ptrb = (uint8_t *)ptrw;
+    while (num--) {
+        *ptrb++ = 0;
+    }
 }
 
-static void print_node(struct block *current) {
-	//UNUSED(current);
-	char* string = hex_to_ascii((int) current); 
-	kprint("ADDR: ");
-	kprint(string);
-	free(string);
-
-	kprint(", SIZE:");
-	string = hex_to_ascii((int)(*current).size); 
-	kprint(string);
-	free(string);
-
-	kprint(", USED:");
-	string = int_to_ascii((int)(*current).used);
-	kprint(string);
-	free(string);
-
-	kprint(", NEXT:");
-	string = hex_to_ascii((int)(*current).next);
-	kprint(string);
-	free(string);
-	kprint("\n");
+void *ta_calloc(size_t num, size_t size) {
+    num *= size;
+    Block *block = alloc_block(num);
+    if (block != NULL) {
+        memclear(block->addr, num);
+        return block->addr;
+    }
+    return NULL;
 }
 
-static void traverse() {
-	struct block *current = head;
-	for(; (*current).next != NULL; current = (*current).next) {
-		print_node(current);
-	}
-	print_node(current);
-	kprint("\n");
+static size_t count_blocks(Block *ptr) {
+    size_t num = 0;
+    while (ptr != NULL) {
+        num++;
+        ptr = ptr->next;
+    }
+    return num;
 }
 
-void debug_traverse() {
-	traverse();
+size_t ta_num_free() {
+    return count_blocks(heap->free);
+}
+
+size_t ta_num_used() {
+    return count_blocks(heap->used);
+}
+
+size_t ta_num_fresh() {
+    return count_blocks(heap->fresh);
+}
+
+bool ta_check() {
+    return heap_max_blocks == ta_num_free() + ta_num_used() + ta_num_fresh();
 }

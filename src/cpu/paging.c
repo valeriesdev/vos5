@@ -19,7 +19,7 @@
 page_t* get_page(uint32_t address, int make, page_directory_t *directory);
 void page_fault(registers_t *regs);
 void allocate_frame(page_t *page, uint8_t is_kernel, uint8_t is_writeable);
-void free_frame(page_t *page);
+void ta_free_frame(page_t *page);
 
 
 static char* h_to_a_inline(int n);
@@ -38,16 +38,16 @@ paging_structure_t **all_paging_structures = NULL;
  */
 void enable_paging() {
     paging_structure = &kernel_paging_structure;
-    all_paging_structures = malloc(sizeof(paging_structure_t**)*5);
+    all_paging_structures = ta_alloc(sizeof(paging_structure_t**)*5);
     all_paging_structures[0] = &kernel_paging_structure;
     all_paging_structures[1] = NULL;
     all_paging_structures[2] = NULL;
     all_paging_structures[3] = NULL;
     all_paging_structures[4] = NULL;
 
-    kernel_paging_structure.page_directory = malloc_align(4096, 4096);
-    kernel_paging_structure.page_tables    = malloc_align(1024*1024*4, 4096);
-    kernel_paging_structure.frame_bitmap   = malloc(0x20000);
+    kernel_paging_structure.page_directory = ta_alloc_align(4096, 4096);
+    kernel_paging_structure.page_tables    = ta_alloc_align(1024*1024*4, 4096);
+    kernel_paging_structure.frame_bitmap   = ta_alloc(0x20000);
     kernel_paging_structure.size           = 1024*1024;
     
     memory_set((uint8_t*)kernel_paging_structure.frame_bitmap          , 0xFFFF, 0x20000);
@@ -157,10 +157,10 @@ static uint32_t test_frame(uint32_t frame_address) {
 }
 
 /**
- * @brief      Finds the first free frame
+ * @brief      Finds the first ta_free frame
  * @ingroup    PAGING
  *
- * @return     The address of the first free frame
+ * @return     The address of the first ta_free frame
  */
 uint32_t find_first_frame() {
     uint32_t i, j;

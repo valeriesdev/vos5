@@ -60,7 +60,7 @@ static void ATA_wait_RDY();
  * 
  * @code
  * uint8_t  size_of_data = 256;
- * uint8_t* data_to_be_read = malloc(sizeof(uint8_t) * 512 * (uint8_t)(size_of_data/512)+1);
+ * uint8_t* data_to_be_read = ta_alloc(sizeof(uint8_t) * 512 * (uint8_t)(size_of_data/512)+1);
  * read_sectors_ATA_PIO((uint32_t)data_to_be_read, 17, (uint8_t)(size_of_data/512)+1);
  * @endcode
  */

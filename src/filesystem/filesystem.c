@@ -57,9 +57,9 @@ void write_file(char* name, void *file_data, uint32_t size_bytes) {
 
 	memory_copy((uint8_t*)name, (uint8_t*)&(node->name), strlen(name)+1);
 	node->length = size_sectors;
-	node->lba = first_free_sector;
+	node->lba = first_ta_free_sector;
 	node->magic = 0xFFFFFFFF;
-	first_free_sector += size_sectors;
+	first_ta_free_sector += size_sectors;
 
 	write_sectors_ATA_PIO(node->lba, size_sectors ,(uint16_t*)file_data);	
 	num_registered_files++;
@@ -98,7 +98,7 @@ void overwrite_file(char* name, void *file_data, uint32_t size_bytes) {
  * @ingroup    FILESYSTEM
  * @param      name  The name of the file
  *
- * @return     A void pointer to that file in memory. <b>Must be free'd</b>
+ * @return     A void pointer to that file in memory. <b>Must be ta_free'd</b>
  */
 struct file_descriptor read_file(char* name) {
 	struct file_descriptor file = {
@@ -109,7 +109,7 @@ struct file_descriptor read_file(char* name) {
 	uint8_t offset = get_file(name);
 	if(offset == 0) return file;
 	struct file *file_to_read = fat_head+offset;
-	void *return_file = malloc(file_to_read->length*512);
+	void *return_file = ta_alloc(file_to_read->length*512);
 	read_sectors_ATA_PIO((uint32_t)return_file, file_to_read->lba, file_to_read->length);
 
 	file.address = return_file;
@@ -124,10 +124,11 @@ struct file_descriptor read_file(char* name) {
  */
 static void update_disk_fat() {
 	uint8_t num_sectors = (sizeof(struct file)*num_registered_files/512 > 1 ) ? sizeof(struct file)*num_registered_files/512 : 1;
-	uint16_t* t_storage = malloc(num_sectors*512);
+	uint16_t* t_storage = ta_alloc(num_sectors*512);
 	memory_copy((uint8_t*)fat_head, (uint8_t*)t_storage,sizeof(struct file)*num_registered_files);
 	write_sectors_ATA_PIO(FAT_LBA, num_sectors, (uint16_t*)fat_head);
-	t_storage = free(t_storage); // major source of memory leaking
+	ta_free(t_storage); // major source of memory leaking
+	t_storage = NULL;
 }
 
 /**

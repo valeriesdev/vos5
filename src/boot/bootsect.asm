@@ -32,7 +32,7 @@ load_kernel:               ; Load the kernel from disk
  
 [bits 32]                  ; This section is 32-bit
 BEGIN_PM:                  ; Here, we enter protected mode
-    mov ebp, 0x8000000 ; 6. update the stack right at the top of the free space
+    mov ebp, 0x8000000 ; 6. update the stack right at the top of the ta_free space
     mov esp, ebp
     call KERNEL_OFFSET     ; Go to the kernel
     jmp $                  ; Loop if the kernel ever stops

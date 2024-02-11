@@ -1,21 +1,17 @@
-#ifndef MEM_H
-#define MEM_H
-
-#include <stdint.h>
+#include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
+
+bool ta_init(const void *base, const void *limit, const size_t heap_blocks, const size_t split_thresh, const size_t alignment);
+void *ta_alloc(size_t num);
+void *ta_alloc_align(size_t num, size_t alignment);
+void *ta_calloc(size_t num, size_t size);
+bool ta_free(void *ptr);
+
+size_t ta_num_free();
+size_t ta_num_used();
+size_t ta_num_fresh();
+bool ta_check();
 
 void memory_copy(uint8_t *source, uint8_t *dest, int nbytes);
 void memory_set(uint8_t *dest, uint8_t val, uint32_t len);
-void *malloc(uint32_t size);
-void initialize_memory();
-void* free(void* address);
-void* get_top();
-
-void *malloc_align(uint32_t size, uint32_t align);
-
-void refactor_free();
-
-//debug
-void debug_traverse();
-
-#endif

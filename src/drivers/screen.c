@@ -29,9 +29,9 @@ extern uint8_t is_alternate_process_running;
 static uint32_t *blocked_write_locations = NULL;
 
 void clear_bwl() {
-    if(blocked_write_locations != NULL) free (blocked_write_locations);
+    if(blocked_write_locations != NULL) ta_free (blocked_write_locations);
     blocked_write_locations = NULL;
-    blocked_write_locations = malloc(sizeof(uint8_t)*1);
+    blocked_write_locations = ta_alloc(sizeof(uint8_t)*1);
 }
 
 void add_bwl(uint32_t new) {
@@ -42,13 +42,13 @@ void add_bwl(uint32_t new) {
         size++;
     }
 
-    uint32_t *new_bwl = malloc(size+1);
+    uint32_t *new_bwl = ta_alloc(size+1);
     int i = 0;
     for(i = 0; i < size; i++) {
         new_bwl[i] = blocked_write_locations[i];
     }
 
-    free(blocked_write_locations);
+    ta_free(blocked_write_locations);
     blocked_write_locations = new_bwl;
 
     if(new != 0)

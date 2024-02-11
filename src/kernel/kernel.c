@@ -42,12 +42,12 @@ void printb() {
     while(1) {
         int i = 0;
         while(i < 100000000) {
-            void * z = malloc(700);
+            void * z = ta_alloc(700);
                 kprint_at_preserve("process b running ", 60, 9);
                 kprint_at_preserve(int_to_ascii(i), 60, 10);
                 //yield();
             i++;
-            free(z);
+            ta_free(z);
         }
     }
 }
@@ -67,14 +67,14 @@ void printa() {
 }
 
 __attribute__((section(".kernel_entry")))  void kernel_main() {
-    initialize_memory();
+    ta_init(0x100000, 0xf00000, 256, 16, 8);
     isr_install();
     irq_install();
     enable_paging();
     init_fat_info();
     load_fat_from_disk();
 
-    command_resolver_head = malloc(sizeof(struct command_block)); // Does not need to be freed; should always stay in memory
+    command_resolver_head = ta_alloc(sizeof(struct command_block)); // Does not need to be ta_freed; should always stay in memory
     command_resolver_head->function = NULLFUNC;
     command_resolver_head->call_string = "";
     command_resolver_head->next = NULL;
@@ -107,7 +107,7 @@ void kernel_loop() {
         if(next_function != NULL) {
             kprint("\n");
             char** args = str_split(input, ' ');
-            char* args_processed = malloc(sizeof(char)*30);
+            char* args_processed = ta_alloc(sizeof(char)*30);
             int current_arg = 1;
             while(args[current_arg] != 0x0 && args[current_arg] != '\0') {
                 int i = 0;
@@ -122,7 +122,7 @@ void kernel_loop() {
             next_function = NULL;            
             kprint("> ");
             get_keybuffer()[0] = '\0';
-            free(args_processed);
+            ta_free(args_processed);
         }
     }
 }
@@ -133,9 +133,10 @@ void kernel_loop() {
  */
 void kernel_init_keyboard() {
     if(lkeybuffer != NULL) {
-        lkeybuffer = free(lkeybuffer);
+        ta_free(lkeybuffer);
+        lkeybuffer = NULL;
     }
-    lkeybuffer = malloc(sizeof(char)*256);
+    lkeybuffer = ta_alloc(sizeof(char)*256);
     uint8_t keycodes[] = {0x0, 0x0, 0x0};
     void (*gcallback_functions[])() = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     struct keyboard_initializer* keyboardi = create_initializer(1,

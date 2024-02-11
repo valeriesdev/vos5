@@ -10,7 +10,7 @@ An operating system built over quite some time, largely based off of cfenollosa'
  - [X] Expandable C Kernel
  - [X] Hard Disk Reading
  - [X] File System 
- - [ ] Ensure all "malloc"s are "free"d
+ - [ ] Ensure all "ta_alloc"s are "ta_free"d
  - [X] Modular interface for programs
  - [ ] C Compiler
  - [ ] Text Editor (in progress)

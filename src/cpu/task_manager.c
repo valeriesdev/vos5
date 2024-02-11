@@ -39,7 +39,7 @@ void start_task(paging_structure_t * task_paging_struct, void (*run_from_address
 		new_task->assoc_paging_struc = task_paging_struct;
 	}
 
-	new_task->regs = malloc(sizeof(registers_t));
+	new_task->regs = ta_alloc(sizeof(registers_t));
 	asm("mov %%ds, %0\n\t"
    	   //"mov %%cr3, %1\n\t"
    	   "mov %%edi, %1\n\t"
@@ -57,7 +57,7 @@ void start_task(paging_structure_t * task_paging_struct, void (*run_from_address
 	new_task->regs->cs = 0x08;
 	asm("pushf\n\t pop %0" : "=m"(new_task->regs->eflags));
 
-	new_task->regs->ebp = (uint32_t) (malloc(0x10000)+0x10000);
+	new_task->regs->ebp = (uint32_t) (ta_alloc(0x10000)+0x10000);
 	new_task->regs->esp = new_task->regs->ebp-1;
 
 	if(launch == 1) {
@@ -127,13 +127,13 @@ void switch_interrupt(registers_t *regs) {
  
 void acquire_mutex(atomic_flag* mutex)
 {
-	while(atomic_flag_test_and_set(mutex))
-	{
-		__builtin_ia32_pause();
-	}
+//	while(atomic_flag_test_and_set(mutex))
+//	{
+//		__builtin_ia32_pause();
+//	}
 }
  
 void release_mutex(atomic_flag* mutex)
 {
-	atomic_flag_clear(mutex);
+//	atomic_flag_clear(mutex);
 }

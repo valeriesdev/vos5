@@ -38,7 +38,7 @@ void END(char *args) {
 }
 
 void PAGE(char *args) {
-    void* page = malloc(1000);
+    void* page = ta_alloc(1000);
     kprint("Page: ");
     kprintn(hex_to_ascii((int)page));
 

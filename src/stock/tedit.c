@@ -39,7 +39,7 @@ static const char a[] = "woah... this is a new program.\n I think im loaded at 0
 tedit_code void func()  {
 	initialize();
 }
-// Variables that will need to be malloc'd and free'd
+// Variables that will need to be ta_alloc'd and ta_free'd
 char* keybuffer = NULL;
 
 // Variables
@@ -48,7 +48,7 @@ char *file_name = NULL;
 uint8_t exit = NULL;
 
 static void initialize_keyboard() {
-	keybuffer = malloc(sizeof(char)*256);
+	keybuffer = ta_alloc(sizeof(char)*256);
 	void (*gcallback_functions[])() = {exit_program, save_program, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 	uint8_t keycodes[] = {0x1D, 0x10, 0x0, 0x1D, 0x1F, 0x0};
     
@@ -57,8 +57,9 @@ static void initialize_keyboard() {
 }
 
 static void exit_program() {
-	// Free all memory related to program
-	keybuffer = free(keybuffer);
+	// ta_free all memory related to program
+	ta_free(keybuffer);
+	keybuffer = NULL;
 
 	// Prepare return to CLI
 
@@ -83,10 +84,11 @@ static void initialize() {
 	clear_screen();
 	initialize_keyboard();
 
-	struct popup_str_struct* z = malloc(sizeof(struct popup_str_struct));
+	struct popup_str_struct* z = ta_alloc(sizeof(struct popup_str_struct));
 	*z = (struct popup_str_struct) {5,20,5,15,6,"Enter file name: ", 12, NULL};
 	file_name = create_popup(1, z);
-	z = free(z);
+	ta_free(z);
+	z = NULL;
 
 	// Static screen text
 	char* header_00 = "0x00000 | VOS TEdit 0.0 | File: ";
@@ -113,7 +115,7 @@ static void initialize() {
 		void* old_file = read_file(file_name).address;
 		memory_copy((uint8_t*)old_file,(uint8_t*)keybuffer,strlen((char*)old_file));
 		kprint_at(keybuffer,0,1);
-		free(old_file);
+		ta_free(old_file);
 	}
 
 	exit = 1;

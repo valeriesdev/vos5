@@ -34,7 +34,7 @@ void register_command(struct command_block *command_resolver_head, vf_ptr new_fu
 		current = current->next;
 	}
 
-	struct command_block *command_block_new = malloc(sizeof(struct command_block)); // Does not need to be freed; should always stay in memory
+	struct command_block *command_block_new = ta_alloc(sizeof(struct command_block)); // Does not need to be ta_freed; should always stay in memory
 	*command_block_new = (struct command_block) {.function = new_function, .call_string = function_call_string, .next = NULL};
 	current->next = command_block_new;
 }

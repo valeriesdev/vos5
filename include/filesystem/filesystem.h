@@ -9,7 +9,7 @@
 
 struct file *fat_head;
 uint32_t num_registered_files;
-uint32_t first_free_sector;
+uint32_t first_ta_free_sector;
 
 struct file {
 	char name[32];

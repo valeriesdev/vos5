@@ -18,11 +18,11 @@
 
 /**
  * K&R, section 3.6
- * BROKEN! freeing the str causes a hard crash
+ * BROKEN! ta_freeing the str causes a hard crash
  */
 char* int_to_ascii(int n) {
     int i, sign;
-    char* str = malloc(sizeof(char)* (logi(n, 10) > 1) ? logi(n, 10) : 1);
+    char* str = ta_alloc(sizeof(char)* (logi(n, 10) > 1) ? logi(n, 10) : 1);
 
     if ((sign = n) < 0)           /* record sign */
         n = -n;                   /* make n positive */
@@ -45,10 +45,10 @@ char* int_to_ascii(int n) {
  * @return     A char* with the ascii hex string
  * 
  * @todo       Completely rework function to operate in-place, if possible.
- * @note       Requires the use of malloc, so it cannot be used before the memory has been initialized.
+ * @note       Requires the use of ta_alloc, so it cannot be used before the memory has been initialized.
  */
 char* hex_to_ascii(int n) {
-    char *str = malloc(sizeof(char)*12); // needs to be replaced with inplace
+    char *str = ta_alloc(sizeof(char)*12); // needs to be replaced with inplace
     str[0] = '\0';
     append(str, '0');
     append(str, 'x');
@@ -115,7 +115,7 @@ int strcmp(char *s, char *t) {
  * @param      a_str    String to split
  * @param[in]  a_delim  Delimiter to split string by
  *
- * @return     char** containing all substrings. <b>char** and each char* must be freed</b>
+ * @return     char** containing all substrings. <b>char** and each char* must be ta_freed</b>
  */
 char** str_split(char* a_str, const char a_delim) {
     int count = 0;
@@ -128,7 +128,7 @@ char** str_split(char* a_str, const char a_delim) {
         current = a_str[i];
     }
 
-    char** output = malloc((count+1)*sizeof(char*));
+    char** output = ta_alloc((count+1)*sizeof(char*));
     if(count == 0) { 
         output[0] = a_str;
         return output; 
@@ -141,7 +141,7 @@ char** str_split(char* a_str, const char a_delim) {
     int last = 0;
     while(current != '\0') {
         if(current == a_delim) {
-            output[count] = malloc(sizeof(char)*(i-last));
+            output[count] = ta_alloc(sizeof(char)*(i-last));
             int j = 0;
             while(j < (i-last)) {
                 output[count][j] =  a_str[last+j];
@@ -156,14 +156,14 @@ char** str_split(char* a_str, const char a_delim) {
         }
     }
 
-    output[count] = malloc(sizeof(char)*(i-last));
+    output[count] = ta_alloc(sizeof(char)*(i-last));
     int j = 0;
     while(j < (i-last)) {
         output[count][j] =  a_str[last+j];
         j++;
     }
     output[count][j] = '\0';
-    output[count+1] = malloc(sizeof(char));
+    output[count+1] = ta_alloc(sizeof(char));
     output[count+1] = '\0';
     return output;
 }
