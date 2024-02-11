@@ -42,12 +42,12 @@ void printb() {
     while(1) {
         int i = 0;
         while(i < 100000000) {
-            if(i%1000000 == 0) {
+            void * z = malloc(700);
                 kprint_at_preserve("process b running ", 60, 9);
                 kprint_at_preserve(int_to_ascii(i), 60, 10);
                 //yield();
-            }
             i++;
+            free(z);
         }
     }
 }
@@ -62,7 +62,6 @@ void printa() {
                 //yield();
             }
             i++;
-
         }
     }
 }
@@ -90,13 +89,12 @@ __attribute__((section(".kernel_entry")))  void kernel_main() {
 
     setup_windows();
 
+    //printb();
     start_task((paging_structure_t*)&kernel_paging_structure, printa, 0);
     start_task((paging_structure_t*)&kernel_paging_structure, printb, 0);
     start_task((paging_structure_t*)&kernel_paging_structure, kernel_loop, 1);
     while(1);
 }
-
-
 
 void kernel_loop() {
     next_function = NULL;

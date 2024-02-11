@@ -29,9 +29,9 @@ static void timer_callback(registers_t *regs) {
     tick++;
 
     if(tick%100 == 0) {
-        char* string = hex_to_ascii((int)get_top());
-        kprint_at_preserve(string,71,0);
-        string = free(string);
+        // char* string = hex_to_ascii((int)get_top());
+        // kprint_at_preserve(string,71,0);
+        // string = free(string);
         switch_interrupt(regs);
 
     }   

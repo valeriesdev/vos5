@@ -14,6 +14,7 @@
 #include "cpu/ports.h"
 #include "libc/mem.h"
 #include "kernel/windows.h"
+#include "cpu/task_manager.h"
 
 // Private function declarations
 static int get_cursor_offset();
@@ -64,6 +65,7 @@ void add_bwl(uint32_t new) {
  * @param[in]  row      The row
  */
 void kprint_at(char *message, int col, int row) {
+    acquire_mutex(&kernel_mutex);
     /* Set cursor if col/row are negative */
     int offset;
     if (col >= 0 && row >= 0)
@@ -82,35 +84,8 @@ void kprint_at(char *message, int col, int row) {
         row = get_offset_row(offset);
         col = get_offset_col(offset);
     }
+    release_mutex(&kernel_mutex);
 }
-
-void kprint_w(char* message, int window) {
-    int offset = get_cursor_offset();
-    int row = get_offset_row(offset);
-    int col = get_offset_col(offset);
-
-    /* Loop through message and print it */
-    int i = 0;
-    while (message[i] != 0) {
-        if(window == 0) {
-            if(col > 37) {
-                col = 1;
-                row++;
-            }
-        } else{
-            if(col < 41) {
-                col = 41;
-                row++;
-            }
-        }
-
-        offset = print_char(message[i++], col, row, WHITE_ON_BLACK);
-
-        /* Compute row/col for next iteration */
-        row = get_offset_row(offset);
-        col = get_offset_col(offset);
-    }
-} 
 
 /**
  * @brief      Print a message at the specified location, preserving cursor position
@@ -149,6 +124,7 @@ void kprint(char *message) {
  * @ingroup    SCREEN
  */
 void kprint_backspace() {
+    acquire_mutex(&kernel_mutex);
     uint32_t *current = blocked_write_locations;
     while(*current != 0) {
         if(get_cursor_offset() == *current) {
@@ -160,6 +136,7 @@ void kprint_backspace() {
     int row = get_offset_row(offset);
     int col = get_offset_col(offset);
     print_char(0x08, col, row, WHITE_ON_BLACK);
+    release_mutex(&kernel_mutex);
 }
 
 /**

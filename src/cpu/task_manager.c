@@ -2,6 +2,7 @@
 #include "cpu/paging.h"
 #include "libc/mem.h"
 #include <stddef.h>
+#include <stdatomic.h>
 
 typedef struct task {
 	registers_t *regs; 
@@ -16,6 +17,7 @@ uint32_t num_tasks = 0;
 uint32_t current_task = 0;
 uint8_t tasks_running = 0;
 uint8_t tasking_enabled = 0;
+atomic_flag kernel_mutex = ATOMIC_FLAG_INIT;
 
 /**
  * Function definitions
@@ -59,9 +61,9 @@ void start_task(paging_structure_t * task_paging_struct, void (*run_from_address
 	new_task->regs->esp = new_task->regs->ebp-1;
 
 	if(launch == 1) {
-		current_task = num_tasks-1;
-    	register_interrupt_handler(0x29, switch_interrupt);
-    	run_from_address();
+		//current_task = num_tasks-1;
+    	//register_interrupt_handler(0x29, switch_interrupt);
+    	//run_from_address();
 		return;
 	} else {
 		return;
@@ -102,8 +104,8 @@ void switch_to_task(TASK task) {
     	"pop %%eax\n\t" 
     	"mov %%eax, %%cr3\n\t"
     	"popa\n\t"
-	 	"pop %%ebx\n\t" // clobber ebx
-    	"add $28, %%esp\n\t"
+	 	//"pop %%ebx\n\t" // clobber ebx
+    	"add $32, %%esp\n\t"
 	 	"jmp -20(%%esp)" : : "m"((task.regs->esp)), "m"(task.regs->ebp));
 }
 
@@ -116,13 +118,22 @@ void switch_interrupt(registers_t *regs) {
 		return;
 	} else if(tasking_enabled == 1) {
 		tasks_running = 1;
+		regs->eip = (uint32_t) next_task;
 	}
 
     return;
 }
 
-void yield() {
-	//asm("int $0x29")
-	//next_task(NULL);
-	return;
+ 
+void acquire_mutex(atomic_flag* mutex)
+{
+	while(atomic_flag_test_and_set(mutex))
+	{
+		__builtin_ia32_pause();
+	}
+}
+ 
+void release_mutex(atomic_flag* mutex)
+{
+	atomic_flag_clear(mutex);
 }

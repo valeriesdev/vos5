@@ -57,7 +57,7 @@ void enable_paging() {
 	int i = 0, j = 0;
 	for(i = 0; i < 1024; i++) {     // i corresponds to current page table
 		for(j = 0; j < 1024; j++) { // j corresponds to current page
-            if((1024*i+j)*0x1000 > 0x6000000 && (1024*i+j)*0x1000 < 0x7800000) {
+            if(0 && (1024*i+j)*0x1000 > 0x6000000 && (1024*i+j)*0x1000 < 0x7800000) {
                 kernel_paging_structure.page_tables[1024*i+j] = ((1024*i+j)*0x1000) | 0b010;  // supervisor rw not present
                 clear_frame((1024*i+j)*0x1000);
             } else {

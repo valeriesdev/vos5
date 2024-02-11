@@ -44,6 +44,7 @@
 #include "libc/string.h"
 #include "libc/function.h"
 #include "drivers/screen.h"
+#include "cpu/task_manager.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -198,6 +199,7 @@ static void *find_free(size_t n) {
  * @return     NULL on success.
  */
 void* free(void *address) {
+	acquire_mutex(&kernel_mutex);
 	num_free_blocks++;
 	struct block *changeBlock = (struct block *)address;
 	char *tBlock = (char*)address;
@@ -222,8 +224,8 @@ void* free(void *address) {
 		top = current;
 	}
 
+	release_mutex(&kernel_mutex);
 	if(top->used == 0) free(top);
-
 	return NULL;
 }
 
@@ -256,9 +258,11 @@ void refactor_free() {
  * @return     The address of the block
  */
 void *malloc(uint32_t size) {
+	acquire_mutex(&kernel_mutex);
 	if(num_free_blocks > FREE_BLOCK_THRESHOLD) refactor_free();
 
 	void* t = alloc(size);
+	release_mutex(&kernel_mutex);
 	return t;
 }
 
@@ -284,8 +288,6 @@ void *malloc_align(uint32_t size, uint32_t align) {
 	top = (*top).next;
 	
 	return &(*new_block).data;
-
-
 }
 
 // Debug functions
