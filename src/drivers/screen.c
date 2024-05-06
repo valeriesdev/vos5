@@ -65,7 +65,7 @@ void add_bwl(uint32_t new) {
  * @param[in]  row      The row
  */
 void kprint_at(char *message, int col, int row) {
-    acquire_mutex(&kernel_mutex);
+    asm volatile("cli");
     /* Set cursor if col/row are negative */
     int offset;
     if (col >= 0 && row >= 0)
@@ -84,7 +84,7 @@ void kprint_at(char *message, int col, int row) {
         row = get_offset_row(offset);
         col = get_offset_col(offset);
     }
-    release_mutex(&kernel_mutex);
+    asm volatile("sti");
 }
 
 /**
@@ -95,9 +95,11 @@ void kprint_at(char *message, int col, int row) {
  * @param[in]  row      The row
  */
 void kprint_at_preserve(char *message, int col, int row) {
+    asm volatile("cli");
     int offset = get_cursor_offset();
     kprint_at(message, col, row);
     set_cursor_offset(offset);
+    asm volatile("sti");
 }
 
 /**
@@ -124,7 +126,7 @@ void kprint(char *message) {
  * @ingroup    SCREEN
  */
 void kprint_backspace() {
-    acquire_mutex(&kernel_mutex);
+    asm volatile("cli");
     uint32_t *current = blocked_write_locations;
     while(*current != 0) {
         if(get_cursor_offset() == *current) {
@@ -136,7 +138,7 @@ void kprint_backspace() {
     int row = get_offset_row(offset);
     int col = get_offset_col(offset);
     print_char(0x08, col, row, WHITE_ON_BLACK);
-    release_mutex(&kernel_mutex);
+    asm volatile("sti");
 }
 
 /**

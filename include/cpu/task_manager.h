@@ -7,3 +7,6 @@ void start_task(paging_structure_t * task_paging_struct, void (*run_from_address
 void acquire_mutex(atomic_flag* mutex);
 void release_mutex(atomic_flag* mutex);
 atomic_flag kernel_mutex;
+
+
+void start_user_task(uint16_t size, char *filename);

@@ -199,8 +199,6 @@ void irq_install() {
     asm volatile("sti");
     /* IRQ0: timer */
     init_timer(50);
-    /* IRQ1: keyboard */
-    kernel_init_keyboard();
 
     register_interrupt_handler(46, disk_interrupt);
 }

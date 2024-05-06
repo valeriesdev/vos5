@@ -23,7 +23,6 @@ void ta_free_frame(page_t *page);
 
 
 static char* h_to_a_inline(int n);
-static uint32_t test_frame(uint32_t frame_address);
 uint32_t find_first_frame();
 
 paging_structure_t kernel_paging_structure;
@@ -38,7 +37,7 @@ paging_structure_t **all_paging_structures = NULL;
  */
 void enable_paging() {
     paging_structure = &kernel_paging_structure;
-    all_paging_structures = ta_alloc(sizeof(paging_structure_t**)*5);
+    all_paging_structures = ta_alloc(sizeof(paging_structure_t**)*256);
     all_paging_structures[0] = &kernel_paging_structure;
     all_paging_structures[1] = NULL;
     all_paging_structures[2] = NULL;
@@ -57,7 +56,7 @@ void enable_paging() {
 	int i = 0, j = 0;
 	for(i = 0; i < 1024; i++) {     // i corresponds to current page table
 		for(j = 0; j < 1024; j++) { // j corresponds to current page
-            if(0 && (1024*i+j)*0x1000 > 0x6000000 && (1024*i+j)*0x1000 < 0x7800000) {
+            if(0 && (1024*i+j)*0x1000 > 0xf00000 && (1024*i+j)*0x1000 < 0x78000000) {
                 kernel_paging_structure.page_tables[1024*i+j] = ((1024*i+j)*0x1000) | 0b010;  // supervisor rw not present
                 clear_frame((1024*i+j)*0x1000);
             } else {
@@ -81,6 +80,27 @@ void enable_paging() {
     (void)(page_directory_reference);
 
 	register_interrupt_handler(14, page_fault);
+}
+
+paging_structure_t* establish_paging_structure() {
+    paging_structure_t *new_paging_structure = ta_alloc(sizeof(paging_structure_t));
+    new_paging_structure->page_directory     = ta_alloc_align(4096, 4096);
+    new_paging_structure->page_tables        = ta_alloc_align(1024*1024*4, 4096);
+    new_paging_structure->frame_bitmap       = ta_alloc(0x20000);
+    new_paging_structure->size               = 1024*1024;
+    
+    memory_set((uint8_t*)new_paging_structure->frame_bitmap          , 0xFFFF, 0x20000);
+
+    int i = 0, j = 0;
+    for(i = 0; i < 1024; i++) {     // i corresponds to current page table
+        for(j = 0; j < 1024; j++) { // j corresponds to current page
+            new_paging_structure->page_tables[1024*i+j] = ((1024*i+j)*0x1000) | 0b010;  // supervisor rw not present
+            //clear_frame((1024*i+j)*0x1000);
+        }
+        new_paging_structure->page_directory[i] = ((unsigned int)&new_paging_structure->page_tables[1024*i]) | 0b011; // supervisor rw present
+    }
+
+    return new_paging_structure;
 }
 
 void switch_paging_structure(paging_structure_t *structure) {
@@ -149,7 +169,7 @@ void clear_frame(uint32_t frame_address) {
  *
  * @param[in]  frame_address  The frame address
  */
-static uint32_t test_frame(uint32_t frame_address) {
+uint32_t test_frame(uint32_t frame_address) {
     uint32_t frame = frame_address/0x1000;
     uint32_t idx = INDEX_FROM_BIT(frame);
     uint32_t off = OFFSET_FROM_BIT(frame);

@@ -15,3 +15,20 @@ bool ta_check();
 
 void memory_copy(uint8_t *source, uint8_t *dest, int nbytes);
 void memory_set(uint8_t *dest, uint8_t val, uint32_t len);
+
+
+typedef struct Block Block;
+
+struct Block {
+    void *addr;
+    Block *next;
+    size_t size;
+};
+
+typedef struct {
+    Block *free;   // first ta_free block
+    Block *used;   // first used block
+    Block *fresh;  // first available blank block
+    size_t top;    // top ta_free addr
+} Heap;
+Heap *heap;

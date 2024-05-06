@@ -37,10 +37,14 @@ uint32_t find_first_frame();
 void set_page_value(uint32_t page_address, uint32_t page_value);
 void clear_frame(uint32_t frame_address); 
 void set_frame(uint32_t frame_address);
+uint32_t test_frame(uint32_t frame_address);
 void ta_free_paging_structure();
+paging_structure_t* establish_paging_structure();
+
 
 uint32_t *page_directory;
 uint32_t *page_tables;
+// paging_structure_t kernel_paging_structure;
 
 #define INDEX_FROM_BIT(a) (a/32)
 #define OFFSET_FROM_BIT(a) (a%32)

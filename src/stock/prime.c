@@ -22,9 +22,8 @@ header struct fat_code prime_file_info = {
 };
 
 entry void prime_entry() {
-	kprintn("Finding all prime numbers up to 100000");
 	uint32_t current_number = 2;
-	for(; current_number < 10000; current_number++) {
+	for(; current_number < 10000000; current_number++) {
 		uint32_t current_divisor = 2;
 		uint8_t is_prime = 1;
 		for(; current_divisor < current_number/2+1; current_divisor++) {
@@ -34,8 +33,7 @@ entry void prime_entry() {
 			}
 		}
 		if(is_prime == 1) {
-			kprint(int_to_ascii(current_number));
-			kprintn(" is prime.");
+			kprint_at_preserve(int_to_ascii(current_number),60, 11);
 		} else {
 
 			//kprint(int_to_ascii(current_number));

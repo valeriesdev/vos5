@@ -162,9 +162,9 @@ char** str_split(char* a_str, const char a_delim) {
         output[count][j] =  a_str[last+j];
         j++;
     }
-    output[count][j] = '\0';
-    output[count+1] = ta_alloc(sizeof(char));
-    output[count+1] = '\0';
+    output[count][j-1] = '\0';
+    //output[count+1] = ta_alloc(sizeof(char));
+    //output[count+1] = '\0';
     return output;
 }
 

@@ -46,24 +46,10 @@
 #include "drivers/screen.h"
 #include "cpu/task_manager.h"
 
-typedef struct Block Block;
 #define false 0
 #define true 1
 
-struct Block {
-    void *addr;
-    Block *next;
-    size_t size;
-};
-
-typedef struct {
-    Block *free;   // first ta_free block
-    Block *used;   // first used block
-    Block *fresh;  // first available blank block
-    size_t top;    // top ta_free addr
-} Heap;
-
-static Heap *heap = NULL;
+Heap *heap = NULL;
 static const void *heap_limit = NULL;
 static size_t heap_split_thresh;
 static size_t heap_alignment;
@@ -274,7 +260,7 @@ void *ta_alloc(size_t num) {
 }
 
 void *ta_alloc_align(size_t num, size_t alignment) {
-    Block *block = alloc_block(num*2);
+    Block *block = alloc_block(num+alignment);
     if (block != NULL) {
         void * addr = (void*)(((size_t)block->addr + alignment) & -alignment);
         return addr;

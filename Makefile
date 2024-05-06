@@ -23,10 +23,10 @@ binary/kernel.elf: binary/kernel_entry.o ${OBJ}
 
 run: binary/os-image.bin
 	#qemu-system-i386 -fda binary/os-image.bin
-	qemu-system-i386 -s -device piix3-ide,id=ide -drive id=disk,file=binary/os-image.bin,format=raw,if=none -device ide-hd,drive=disk,bus=ide.0 -no-reboot -D ./log.txt -d guest_errors,int
+	qemu-system-i386 -s -device piix3-ide,id=ide -m 2G -drive id=disk,file=binary/os-image.bin,format=raw,if=none -device ide-hd,drive=disk,bus=ide.0 -no-reboot -D ./log.txt -d guest_errors,int
 
 debug: binary/os-image.bin binary/kernel.elf
-	qemu-system-i386 -s -device piix3-ide,id=ide -drive id=disk,file=binary/os-image.bin,format=raw,if=none -device ide-hd,drive=disk,bus=ide.0 -no-reboot -D ./log.txt -d guest_errors,int -machine kernel-irqchip=of &
+	qemu-system-i386 -s -device piix3-ide,id=ide -m 2G -drive id=disk,file=binary/os-image.bin,format=raw,if=none,rerror=stop -device ide-hd,drive=disk,bus=ide.0 -no-reboot -D ./log.txt -d guest_errors,int -machine kernel-irqchip=of &
 	${GDB} -ex "target remote localhost:1234" -ex "symbol-file binary/kernel.elf"
 
 binary/%.o: %.c

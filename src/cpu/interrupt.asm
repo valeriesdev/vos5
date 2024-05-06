@@ -9,7 +9,7 @@ section .text
 ; Common ISR code
 isr_common_stub:
     push esp
-    add word [esp], 14
+    add word [esp], 20
     ; 1. Save CPU state
     pusha ; Pushes edi,esi,ebp,esp,ebx,edx,ecx,eax
     mov eax, cr3
@@ -42,7 +42,7 @@ isr_common_stub:
 ; and the 'pop ebx'
 irq_common_stub:
     push esp
-    add word [esp], 14
+    add word [esp], 20
     pusha 
 
     mov eax, cr3
@@ -73,15 +73,11 @@ irq_common_stub:
     pop eax 
     mov cr3, eax
 
-
     popa
 
-
-    
     add esp, 12
 
     iret 
-
     iret 
 
 ; We don't get information about which interrupt was caller

@@ -28,13 +28,14 @@ volatile uint32_t tick = 0;
 static void timer_callback(registers_t *regs) {
     tick++;
 
-    if(tick%5 == 0) {
-        // char* string = hex_to_ascii((int)get_top());
-        // kprint_at_preserve(string,71,0);
-        // string = ta_free(string);
-
-    }   
-    switch_interrupt(regs);
+    if(tick == 0b11111111111111111111111111111110) {
+        tick = 0;
+    }
+    
+    if(tick % 5 == 0) {
+        //kprint_at_preserve(hex_to_ascii(heap->top), 0, 0);
+        switch_interrupt(regs);
+    }
     UNUSED(regs);
     //irq_return();
 }

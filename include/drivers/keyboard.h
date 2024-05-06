@@ -20,31 +20,10 @@
 
 #define LCTRL 0x1D
 
-struct keyboard_initializer {
-	char* nkey_buffer;
-    uint8_t num_callbacks;
-    uint8_t callback_keycodes[30]; // 0-2 is callback 1, 3-5 is 2, 6-8 is 3, etc
-    vf_ptr callback_functions[10];    
-    vf_ptr general_callback;
-};
-
-struct key_callback {
-	uint8_t key_1;
-	uint8_t key_2;
-	uint8_t key_3;
-
-	vf_ptr callback;
-};
-
-void init_keyboard(struct keyboard_initializer* nkey_initializer);
-struct keyboard_initializer *create_initializer(uint8_t n_callbacks,
-                                                uint8_t callbacks_k[],
-                                                vf_ptr callbacks_f[],
-                                                void* special_key_behavior,
-                                                void* keybuffer_addr);
-
+void init_keyboard(char * keybuffer, vf_ptr_s callback);
+char * get_keybuffer();
+vf_ptr_s get_callback();
+uint8_t* get_keys_pressed();
 char* read_line();
-char* get_keybuffer();
-void await_keypress();
 
 #endif

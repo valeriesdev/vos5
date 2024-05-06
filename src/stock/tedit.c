@@ -48,12 +48,12 @@ char *file_name = NULL;
 uint8_t exit = NULL;
 
 static void initialize_keyboard() {
-	keybuffer = ta_alloc(sizeof(char)*256);
-	void (*gcallback_functions[])() = {exit_program, save_program, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
-	uint8_t keycodes[] = {0x1D, 0x10, 0x0, 0x1D, 0x1F, 0x0};
+	// keybuffer = ta_alloc(sizeof(char)*256);
+	// void (*gcallback_functions[])() = {exit_program, save_program, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+	// uint8_t keycodes[] = {0x1D, 0x10, 0x0, 0x1D, 0x1F, 0x0};
     
-    struct keyboard_initializer* keyboardi = create_initializer(2, keycodes, gcallback_functions, 0x0, keybuffer);
-    init_keyboard(keyboardi);
+    // struct keyboard_initializer* keyboardi = create_initializer(2, keycodes, gcallback_functions, 0x0, keybuffer);
+    // init_keyboard(keyboardi);
 }
 
 static void exit_program() {

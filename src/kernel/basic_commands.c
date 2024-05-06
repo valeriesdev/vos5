@@ -71,17 +71,16 @@ void DEBUG_PAUSE(char *args) {
 }
 
 void RUN(char *args) {
-	struct file_descriptor file = read_file(args);
-	void* program = file.address;
-	if(program != 0) {
-		//start_process(program, 0x38, file.size_bytes, 0);
-		//start_program(program, 1, 0x38, file.size_bytes);
-		start_task((paging_structure_t*)&kernel_paging_structure, program, 0);
-	} else {
-		kprint("Program not found.\n");
-	}
+	start_user_task(0, args);
+	// struct file_descriptor file = read_file(args);
+	// void* program = file.address;
+	// if(program != 0) {
+	// 	start_task(NULL, program, 1);
+	// } else {
+	// 	kprint("Program not found.\n");
+	// }
 
-	return;
+	// return;
 }
 
 void LESS(char *args) {
