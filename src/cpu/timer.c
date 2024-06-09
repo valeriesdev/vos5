@@ -33,8 +33,7 @@ static void timer_callback(registers_t *regs) {
     }
     
     if(tick % 5 == 0) {
-        //kprint_at_preserve(hex_to_ascii(heap->top), 0, 0);
-        switch_interrupt(regs);
+        switch_task(regs);
     }
     UNUSED(regs);
     //irq_return();

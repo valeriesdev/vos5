@@ -71,7 +71,7 @@ void DEBUG_PAUSE(char *args) {
 }
 
 void RUN(char *args) {
-	start_user_task(0, args);
+	// start_user_task(0, args);
 	// struct file_descriptor file = read_file(args);
 	// void* program = file.address;
 	// if(program != 0) {

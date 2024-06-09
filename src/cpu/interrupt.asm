@@ -27,7 +27,7 @@ isr_common_stub:
     call isr_handler
     
     ; 3. Restore state
-    pop eax 
+    pop esp 
     pop eax
     mov ds, ax
     mov es, ax
@@ -62,7 +62,7 @@ irq_common_stub:
     cld
     call irq_handler ; Different than the ISR code
 
-    pop ebx  ; Different than the ISR code
+    pop esp  ; Different than the ISR code
     pop ebx
 
     mov ds, bx

@@ -24,6 +24,7 @@
 #include "cpu/ports.h"
 #include "kernel/windows.h"
 #include "cpu/task_manager.h"
+#include "cpu/syscall.h"
 
 struct command_block *command_resolver_head;
 char **lkeybuffer = NULL;
@@ -36,50 +37,9 @@ vf_ptr_s next_function = NULL;
 extern uint32_t address_linker;
 extern uint32_t length_linker;
 
-extern void* kernel_paging_structure;
-atomic_flag i_mutex = ATOMIC_FLAG_INIT;
-
-int i = 0;
-
-void printb() {
-    acquire_mutex(&i_mutex);
-    while(1) {
-        i = 0;
-        while(i < 1000000000) {
-            if(i%100000 == 0) {
-                release_mutex(&i_mutex);
-                char *z = int_to_ascii(i);
-                kprint_at_preserve(z, 60, 10);
-                ta_free(z);
-                int j;
-                for(j = 0; j < 1000000; j++);
-                acquire_mutex(&i_mutex);
-            }
-            i++;
-        }
-    }
-}
-
-void printa() {
-    acquire_mutex(&i_mutex);
-    while(1) {
-        i = 0;
-        while(i < 1000000000) {
-            if(i%100000 == 0) {
-                release_mutex(&i_mutex);char *z = int_to_ascii(i);
-                kprint_at_preserve(z, 60, 9);
-                ta_free(z);
-                int j;
-                for(j = 0; j < 1000000; j++);
-                acquire_mutex(&i_mutex);
-            }
-            i++;
-        }
-    }
-}
 
 __attribute__((section(".kernel_entry")))  void kernel_main() {
-    ta_init(0x100000, 0xeff000, 256, 16, 8);
+    ta_init(0x100000, 0x4fff000, 0xfffff, 16, 8);
     isr_install();
     irq_install();
 
@@ -87,8 +47,6 @@ __attribute__((section(".kernel_entry")))  void kernel_main() {
     init_keyboard(lkeybuffer, NULL);
 
     enable_paging();
-    init_fat_info();
-    load_fat_from_disk();
 
     command_resolver_head = ta_alloc(sizeof(struct command_block)); // Does not need to be ta_freed; should always stay in memory
     command_resolver_head->function = NULLFUNC;
@@ -103,11 +61,27 @@ __attribute__((section(".kernel_entry")))  void kernel_main() {
     register_command(command_resolver_head, DEBUG_PAUSE, "debug_command");
     register_command(command_resolver_head, RUN, "run");
 
-    //setup_windows();
-    start_task((paging_structure_t*)&kernel_paging_structure, printb, 0);
-    start_task((paging_structure_t*)&kernel_paging_structure, printa, 0);
-    start_task((paging_structure_t*)&kernel_paging_structure, kernel_loop, 1);
-    while(1);
+    enable_syscalls();
+
+    // Construct our mother task
+    sys_insert_task(&kernel_pages);
+
+    map_page(&kernel_pages, 0x5ffe000, get_first_physical_page()*0x1000);
+    map_page(&kernel_pages, 0x5fff000, get_first_physical_page()*0x1000);
+    map_page(&kernel_pages, 0x6000000, get_first_physical_page()*0x1000);
+    tasks[0].regs.esp = 0x5ffffff;
+    __asm__("mov $0x5ffffff, %ebp");
+    __asm__("mov $0x5ffffff, %esp");
+
+    int result = sys_fork(&kernel_pages);
+    kprint(int_to_ascii(result));
+    kprintn(" is the tasks PID.");
+    if(result == 0) {
+        while(1);
+    } else {
+        sys_stp();
+        kernel_loop();
+    }
 }
 
 

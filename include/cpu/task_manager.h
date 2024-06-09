@@ -1,12 +1,16 @@
 #include "cpu/isr.h"
 #include "cpu/paging.h"
+#include "cpu/isr.h"
 #include <stdatomic.h>
 
-void switch_interrupt(registers_t *regs);
-void start_task(paging_structure_t * task_paging_struct, void (*run_from_address)(), uint8_t launch);
-void acquire_mutex(atomic_flag* mutex);
-void release_mutex(atomic_flag* mutex);
-atomic_flag kernel_mutex;
+typedef struct task {
+	registers_t regs; 
+	PAGE_STRUCT *assoc_paging_struc;
+} TASK;
 
+TASK tasks[256];
 
-void start_user_task(uint16_t size, char *filename);
+void switch_task(registers_t* regs);
+void insert_task(registers_t* regs);
+void fork(registers_t* regs);
+void setup_task_paging(registers_t *regs);

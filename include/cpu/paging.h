@@ -3,50 +3,23 @@
 
 #include <stdint.h>
 
-typedef struct {
-    uint32_t         *page_directory;
-    uint32_t         *page_tables;
-    uint32_t         *frame_bitmap;
-    uint32_t         size;
-} paging_structure_t;
-
-typedef struct {
-    uint32_t present  : 1;  // page present
-    uint32_t rw       : 1;  // read/write or read only
-    uint32_t user     : 1;  // user mode level
-    uint32_t accessed : 1;
-    uint32_t dirty    : 1;
-    uint32_t unused   : 7;  // unused and reserved bitys
-    uint32_t frame    : 20; // frame address
-} page_t;
-
-typedef struct {
-    page_t pages[1024];
-} page_table_t;
-
-typedef struct  {
-    page_table_t *tables[1024];
-    uint32_t tables_physical[1024];
-    uint32_t phyiscal_address;
-} page_directory_t;
+typedef struct page_struct_t {
+    uint32_t page_directory[1024] __attribute__((aligned(4096)));
+    uint32_t *page_tables[1024] __attribute__((aligned(4096)));
+    unsigned char *bitmap;
+} PAGE_STRUCT;
 
 void enable_paging();
-void set_page_present(uint32_t page_address);
-void set_page_absent(uint32_t page_address);
-uint32_t find_first_frame();
-void set_page_value(uint32_t page_address, uint32_t page_value);
-void clear_frame(uint32_t frame_address); 
-void set_frame(uint32_t frame_address);
-uint32_t test_frame(uint32_t frame_address);
-void ta_free_paging_structure();
-paging_structure_t* establish_paging_structure();
+int get_first_physical_page();
+void* mark_physical_page_used(void * address);
+void* mark_physical_page_free(void * address);
+void switch_cr3(void * new_cr3);
+PAGE_STRUCT* copy_nonkernel_pages(PAGE_STRUCT* old);
+
+void map_page(PAGE_STRUCT* pages, uint32_t virtual, uint32_t physical);
+void free_page(PAGE_STRUCT* pages, uint32_t virtual);
 
 
-uint32_t *page_directory;
-uint32_t *page_tables;
-// paging_structure_t kernel_paging_structure;
-
-#define INDEX_FROM_BIT(a) (a/32)
-#define OFFSET_FROM_BIT(a) (a%32)
+PAGE_STRUCT kernel_pages;
 
 #endif
